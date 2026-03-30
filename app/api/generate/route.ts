@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import type { GenerateRequest } from "@/types";
 import { compilePrompt, getAnimationConfig } from "@/lib/promptCompiler";
 import { generateVoice } from "@/lib/eleven";
-import { generateAvatar } from "@/lib/klingAvatar";
-import { createJob, updateJob, generateJobId } from "@/lib/jobStore";
+import { submitAvatar } from "@/lib/klingAvatar";
+
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
     const body: GenerateRequest = await req.json();
     const { script, voiceMode, baseImageUrl } = body;
 
-    // Validate base image
     if (!baseImageUrl) {
       return NextResponse.json(
         { success: false, error: "Base image is required" },
@@ -18,7 +18,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate script (required for TTS mode)
     if (voiceMode === "tts" && (!script || script.length === 0)) {
       return NextResponse.json(
         { success: false, error: "Script is required for TTS mode" },
@@ -26,7 +25,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate uploaded audio (required for upload mode)
     if (voiceMode === "upload" && !body.uploadedAudioUrl) {
       return NextResponse.json(
         { success: false, error: "Audio file is required for lip-sync mode" },
@@ -41,15 +39,35 @@ export async function POST(req: Request) {
       );
     }
 
-    const jobId = generateJobId();
-    createJob(jobId);
-
-    runPipeline(jobId, body).catch((err) => {
-      console.error(`Job ${jobId} failed:`, err);
-      updateJob(jobId, { status: "failed", error: err.message });
+    // 1. Compile prompt
+    const prompt = compilePrompt({
+      script: script || "",
+      gestureMode: body.gestureMode,
+      costume: body.costume,
+      mouth: body.mouth,
+      voicePreset: body.voicePreset,
+      voiceTuning: body.voiceTuning,
+      customPrompts: body.customPrompts,
     });
 
-    return NextResponse.json({ success: true, jobId });
+    // 2. Get audio URL — either generate TTS or use uploaded audio
+    let audioUrl: string;
+    if (voiceMode === "upload" && body.uploadedAudioUrl) {
+      audioUrl = body.uploadedAudioUrl;
+    } else {
+      audioUrl = await generateVoice(script, body.voicePreset, body.voiceTuning);
+    }
+
+    // 3. Submit avatar generation to fal.ai queue (non-blocking)
+    const animation = getAnimationConfig(body.gestureMode);
+    const requestId = await submitAvatar({
+      imageUrl: baseImageUrl,
+      audioUrl,
+      prompt,
+      animation,
+    });
+
+    return NextResponse.json({ success: true, jobId: requestId });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
@@ -60,51 +78,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
-
-async function runPipeline(jobId: string, params: GenerateRequest) {
-  const {
-    script,
-    gestureMode,
-    costume,
-    mouth,
-    voicePreset,
-    voiceTuning,
-    voiceMode,
-    baseImageUrl,
-    uploadedAudioUrl,
-    customPrompts,
-  } = params;
-
-  // 1. Compile prompt (with optional custom overrides)
-  const prompt = compilePrompt({
-    script: script || "",
-    gestureMode,
-    costume,
-    mouth,
-    voicePreset,
-    voiceTuning,
-    customPrompts,
-  });
-
-  // 2. Get audio URL — either generate TTS or use uploaded audio
-  let audioUrl: string;
-  if (voiceMode === "upload" && uploadedAudioUrl) {
-    audioUrl = uploadedAudioUrl;
-  } else {
-    audioUrl = await generateVoice(script, voicePreset, voiceTuning);
-  }
-
-  // 3. Generate avatar — user-uploaded base image
-  const animation = getAnimationConfig(gestureMode);
-
-  const videoUrl = await generateAvatar({
-    imageUrl: baseImageUrl,
-    audioUrl,
-    prompt,
-    animation,
-  });
-
-  // 4. Update job with result
-  updateJob(jobId, { status: "done", videoUrl });
 }

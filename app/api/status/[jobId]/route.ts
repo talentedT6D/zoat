@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
-import { getJob } from "@/lib/jobStore";
+import { checkAvatarStatus } from "@/lib/klingAvatar";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   const { jobId } = await params;
-  const job = getJob(jobId);
 
-  if (!job) {
+  try {
+    const result = await checkAvatarStatus(jobId);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Status check error:", error);
     return NextResponse.json(
-      { status: "failed", error: "Job not found" },
-      { status: 404 }
+      { status: "failed", error: "Failed to check job status" },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    status: job.status,
-    videoUrl: job.videoUrl,
-    error: job.error,
-  });
 }

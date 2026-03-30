@@ -19,6 +19,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Font variables ── */
+:root {
+  --font-heading: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
 /* ── Brand colors ── */
 :root {
   --purple: #9b51e0;
