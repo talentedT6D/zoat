@@ -123,9 +123,9 @@ export default function PromptForm({
     (voiceMode === "tts" ? script.trim().length > 0 : !!uploadedAudioUrl);
 
   return (
-    <div className="w-[420px] min-w-[420px] h-full overflow-y-auto bg-[#0a0814] border-r border-[#9b51e0]/[0.06] flex flex-col">
+    <div className="w-full md:w-[420px] md:min-w-[420px] h-full overflow-y-auto bg-[#0a0814] md:border-r border-[#9b51e0]/[0.06] flex flex-col">
       {/* ── Header ── */}
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9b51e0]/20 to-[#0693e3]/10 border border-[#9b51e0]/15 flex items-center justify-center">
             <span className="text-sm font-[family-name:var(--font-heading)] font-black text-brand-gradient">Z</span>
@@ -141,7 +141,7 @@ export default function PromptForm({
         </div>
       </div>
 
-      <div className="flex-1 px-6 pb-6 flex flex-col gap-5 overflow-y-auto">
+      <div className="flex-1 px-4 md:px-6 pb-6 flex flex-col gap-4 md:gap-5 overflow-y-auto">
         {/* ── Base Image Upload ── */}
         <Section label="Character Image">
           <div
@@ -251,7 +251,7 @@ export default function PromptForm({
         {/* ── Voice Preset ── */}
         {voiceMode === "tts" && (
           <Section label="Voice Style">
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
               {VOICE_PRESETS.map((vp) => (
                 <button key={vp.id} onClick={() => setVoicePreset(vp.id)}
                   className={`py-2 rounded-lg text-center transition-all cursor-pointer ${
@@ -359,7 +359,7 @@ export default function PromptForm({
       </div>
 
       {/* ── Generate Button ── */}
-      <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06]">
+      <div className="px-4 md:px-6 py-4 md:py-5 border-t border-[#9b51e0]/[0.06]">
         <button onClick={handleSubmit} disabled={!canGenerate}
           className={`w-full py-3.5 rounded-xl text-sm font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
             canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/15 cursor-not-allowed"

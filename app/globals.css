@@ -245,3 +245,31 @@ input[type="range"]::-moz-range-thumb {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(155, 81, 224, 0.12), transparent);
 }
+
+/* ── Mobile optimizations ── */
+@media (max-width: 767px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  input[type="range"] {
+    height: 6px;
+  }
+
+  /* Prevent text size adjustment on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Disable tap highlight */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

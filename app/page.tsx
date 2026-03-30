@@ -20,6 +20,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls");
 
   // Live preview state
   const [liveScript, setLiveScript] = useState("");
@@ -64,6 +65,7 @@ export default function Home() {
       setStatus("processing");
       setVideoUrl(null);
       setError(null);
+      setMobileTab("preview");
 
       setLiveScript(request.script);
       setLiveGesture(request.gestureMode);
@@ -110,26 +112,61 @@ export default function Home() {
   return (
     <>
       {!loaded && <Preloader onComplete={() => setLoaded(true)} />}
-    <div className={`flex h-screen overflow-hidden bg-[#08060e] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}>
-      <PromptForm
-        onGenerate={handleGenerate}
-        isGenerating={isGenerating}
-        onBaseImageChange={setBaseImagePreview}
-      />
-      <VideoPreview
-        status={status}
-        videoUrl={videoUrl}
-        script={liveScript}
-        gestureMode={liveGesture}
-        costume={liveCostume}
-        voicePreset={liveVoice}
-        compiledPrompt={compiledPrompt}
-        baseImagePreview={baseImagePreview}
-      />
+    <div className={`flex flex-col md:flex-row h-[100dvh] overflow-hidden bg-[#08060e] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}>
+
+      {/* Mobile tab bar */}
+      <div className="md:hidden flex border-b border-[#9b51e0]/[0.08] bg-[#0a0814] shrink-0">
+        <button
+          onClick={() => setMobileTab("controls")}
+          className={`flex-1 py-3 text-xs font-[family-name:var(--font-heading)] font-medium tracking-wide transition-colors cursor-pointer ${
+            mobileTab === "controls"
+              ? "text-[#b87df5] border-b-2 border-[#9b51e0]"
+              : "text-[#f5f0ff]/30"
+          }`}
+        >
+          Controls
+        </button>
+        <button
+          onClick={() => setMobileTab("preview")}
+          className={`flex-1 py-3 text-xs font-[family-name:var(--font-heading)] font-medium tracking-wide transition-colors cursor-pointer relative ${
+            mobileTab === "preview"
+              ? "text-[#b87df5] border-b-2 border-[#9b51e0]"
+              : "text-[#f5f0ff]/30"
+          }`}
+        >
+          Preview
+          {isGenerating && (
+            <span className="absolute top-2.5 ml-1.5 w-1.5 h-1.5 rounded-full bg-[#ff6900] animate-pulse" />
+          )}
+        </button>
+      </div>
+
+      {/* Form - hidden on mobile when preview tab active */}
+      <div className={`${mobileTab === "controls" ? "flex" : "hidden"} md:flex flex-col min-h-0 flex-1 md:flex-none`}>
+        <PromptForm
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
+          onBaseImageChange={setBaseImagePreview}
+        />
+      </div>
+
+      {/* Preview - hidden on mobile when controls tab active */}
+      <div className={`${mobileTab === "preview" ? "flex" : "hidden"} md:flex flex-col min-h-0 flex-1`}>
+        <VideoPreview
+          status={status}
+          videoUrl={videoUrl}
+          script={liveScript}
+          gestureMode={liveGesture}
+          costume={liveCostume}
+          voicePreset={liveVoice}
+          compiledPrompt={compiledPrompt}
+          baseImagePreview={baseImagePreview}
+        />
+      </div>
 
       {/* Error toast */}
       {error && (
-        <div className="fixed bottom-6 right-6 glass border-[#ff6900]/15 px-5 py-4 rounded-xl text-sm shadow-2xl max-w-md animate-fade-in">
+        <div className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-md glass border-[#ff6900]/15 px-5 py-4 rounded-xl text-sm shadow-2xl animate-fade-in z-40">
           <div className="flex items-start gap-3">
             <div className="w-5 h-5 rounded-full bg-[#ff6900]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <svg className="w-3 h-3 text-[#ff6900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

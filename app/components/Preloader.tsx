@@ -94,7 +94,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
           <>
             {/* Emoji */}
             <div
-              className={`text-6xl mb-8 transition-all duration-150 ${
+              className={`text-5xl md:text-6xl mb-6 md:mb-8 transition-all duration-150 ${
                 textVisible
                   ? "opacity-100 scale-100"
                   : "opacity-0 scale-75"
@@ -104,17 +104,17 @@ export default function Preloader({ onComplete }: PreloaderProps) {
             </div>
 
             {/* "ZAG is a ___" */}
-            <div className="flex items-baseline gap-3">
-              <span className="text-[#f5f0ff]/25 text-xl font-[family-name:var(--font-heading)] font-light tracking-wide">
+            <div className="flex flex-col md:flex-row items-center md:items-baseline gap-1 md:gap-3">
+              <span className="text-[#f5f0ff]/25 text-base md:text-xl font-[family-name:var(--font-heading)] font-light tracking-wide">
                 ZAG is a
               </span>
               <span
-                className={`text-4xl font-[family-name:var(--font-heading)] font-bold tracking-tight transition-all duration-150 ${
+                className={`text-3xl md:text-4xl font-[family-name:var(--font-heading)] font-bold tracking-tight transition-all duration-150 ${
                   textVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-3"
                 }`}
-                style={{ minWidth: "220px" }}
+                style={{ minWidth: "180px" }}
               >
                 <span className="text-brand-gradient">{currentRole.role}</span>
               </span>
@@ -131,12 +131,12 @@ export default function Preloader({ onComplete }: PreloaderProps) {
               </span>
             </div>
 
-            <h1 className="text-5xl font-[family-name:var(--font-heading)] font-bold text-[#f5f0ff] tracking-tight mb-4">
+            <h1 className="text-3xl md:text-5xl font-[family-name:var(--font-heading)] font-bold text-[#f5f0ff] tracking-tight mb-3 md:mb-4 text-center px-4">
               Meet{" "}
               <span>Zag</span>
               {" "}of All Trades
             </h1>
-            <p className="text-base text-[#f5f0ff]/30 font-[family-name:var(--font-body)] tracking-wide">
+            <p className="text-sm md:text-base text-[#f5f0ff]/30 font-[family-name:var(--font-body)] tracking-wide">
               AI Avatar Studio &middot; Must Be Nuts
             </p>
           </div>

@@ -30,7 +30,7 @@ export default function VideoPreview({
   const cfg = STATUS_CONFIG[status];
 
   return (
-    <div className="flex-1 flex flex-col bg-[#08060e] relative overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[#08060e] relative overflow-hidden min-h-0">
       {/* Ambient glow orbs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[10%] left-[60%] w-[500px] h-[400px] bg-[#9b51e0]/[0.03] rounded-full blur-[130px]" />
@@ -39,7 +39,7 @@ export default function VideoPreview({
       </div>
 
       {/* ── Top bar ── */}
-      <div className="relative flex items-center justify-between px-8 py-5 border-b border-[#9b51e0]/[0.05]">
+      <div className="relative flex items-center justify-between px-4 md:px-8 py-3 md:py-5 border-b border-[#9b51e0]/[0.05]">
         <div className="flex items-center gap-4">
           <span className="text-[11px] font-[family-name:var(--font-heading)] font-medium text-[#f5f0ff]/18 uppercase tracking-[0.18em]">
             Preview
@@ -49,19 +49,19 @@ export default function VideoPreview({
             {cfg.label}
           </span>
         </div>
-        <div className="text-[10px] text-[#f5f0ff]/10 tracking-[0.2em] font-[family-name:var(--font-heading)]">
+        <div className="text-[10px] text-[#f5f0ff]/10 tracking-[0.2em] font-[family-name:var(--font-heading)] hidden md:block">
           ZAG OF ALL TRADES
         </div>
       </div>
 
       {/* ── Main preview area ── */}
-      <div className="relative flex-1 flex items-center justify-center p-10">
+      <div className="relative flex-1 flex items-center justify-center p-4 md:p-10 min-h-0">
         {status === "done" && videoUrl ? (
-          <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glow-brand animate-fade-in">
+          <div className="relative w-full max-w-[280px] md:max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glow-brand animate-fade-in">
             <video src={videoUrl} controls autoPlay className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glass">
+          <div className="relative w-full max-w-[280px] md:max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glass">
             {baseImagePreview ? (
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${baseImagePreview})` }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#08060e]/85 via-[#08060e]/20 to-transparent" />
@@ -113,18 +113,18 @@ export default function VideoPreview({
       </div>
 
       {/* ── Bottom info bar ── */}
-      <div className="relative px-8 py-4 border-t border-[#9b51e0]/[0.05] flex items-center gap-5">
+      <div className="relative px-4 md:px-8 py-3 md:py-4 border-t border-[#9b51e0]/[0.05] flex items-center gap-3 md:gap-5 flex-wrap">
         <InfoChip label="Gesture" value={`Type ${gestureMode}`} />
         <Divider />
         <InfoChip label="Outfit" value={COSTUME_LABELS[costume]} />
         <Divider />
         <InfoChip label="Voice" value={voicePreset} capitalize />
-        <Divider />
-        <InfoChip label="Format" value="9:16" />
+        <span className="hidden md:block"><Divider /></span>
+        <span className="hidden md:block"><InfoChip label="Format" value="9:16" /></span>
       </div>
 
       {compiledPrompt && (
-        <div className="relative px-8 py-2.5 border-t border-[#9b51e0]/[0.03] bg-[#9b51e0]/[0.015]">
+        <div className="relative px-4 md:px-8 py-2 md:py-2.5 border-t border-[#9b51e0]/[0.03] bg-[#9b51e0]/[0.015] hidden md:block">
           <p className="text-[9px] text-[#f5f0ff]/12 font-[family-name:var(--font-mono)] truncate">
             prompt: {compiledPrompt.slice(0, 140)}...
           </p>
