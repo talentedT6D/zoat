@@ -1,7 +1,5 @@
-import { fal } from "@fal-ai/client";
+import { fal } from "@/lib/fal";
 import type { AnimationConfig } from "@/types";
-
-fal.config({ credentials: process.env.FAL_KEY! });
 
 const AVATAR_ENDPOINT = "fal-ai/creatify/aurora";
 

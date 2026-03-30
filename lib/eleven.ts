@@ -1,7 +1,5 @@
-import { fal } from "@fal-ai/client";
+import { fal } from "@/lib/fal";
 import type { VoicePreset, VoiceTuning } from "@/types";
-
-fal.config({ credentials: process.env.FAL_KEY! });
 
 // Map ZAG voice presets → Chatterbox base parameters
 const PRESET_CONFIG: Record<
