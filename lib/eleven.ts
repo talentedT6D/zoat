@@ -24,6 +24,13 @@ export async function generateVoice(
   voicePreset: VoicePreset,
   voiceTuning: VoiceTuning
 ): Promise<string> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ELEVENLABS_API_KEY is not set. Add it to .env.local and restart the dev server."
+    );
+  }
+
   const preset = PRESET_CONFIG[voicePreset];
 
   // User tuning overrides preset defaults
@@ -35,7 +42,7 @@ export async function generateVoice(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "xi-api-key": process.env.ELEVENLABS_API_KEY!,
+      "xi-api-key": apiKey,
     },
     body: JSON.stringify({
       text: script,
@@ -50,8 +57,15 @@ export async function generateVoice(
   });
 
   if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`ElevenLabs API error (${res.status}): ${errorText}`);
+    let message: string;
+    try {
+      const err = await res.json();
+      message = err?.detail?.message || err?.detail || JSON.stringify(err);
+    } catch {
+      message = await res.text();
+    }
+    const keyHint = `(key starts with ${apiKey.slice(0, 6)}...)`;
+    throw new Error(`ElevenLabs API error (${res.status}): ${message} ${keyHint}`);
   }
 
   // ElevenLabs returns raw audio bytes — upload to fal storage for the avatar pipeline
