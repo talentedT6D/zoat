@@ -36,11 +36,30 @@ export default function Home() {
     };
   }, []);
 
+  const jobIdRef = useRef<string>("");
+
   const pollJob = useCallback((jobId: string) => {
+    jobIdRef.current = jobId;
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/status/${jobId}`);
+        const res = await fetch(`/api/status/${encodeURIComponent(jobIdRef.current)}`);
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("Status API error:", res.status, text);
+          // Don't stop polling on transient errors
+          return;
+        }
+
         const data = await res.json();
+
+        // Phase transition: TTS done → avatar submitted
+        if (data.nextJobId) {
+          jobIdRef.current = data.nextJobId;
+          return; // Continue polling with new jobId
+        }
 
         if (data.status === "done") {
           setStatus("done");
@@ -56,7 +75,7 @@ export default function Home() {
       } catch {
         // Continue polling on network errors
       }
-    }, 2000);
+    }, 2500);
   }, []);
 
   const handleGenerate = useCallback(
@@ -89,6 +108,14 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(request),
         });
+
+        if (!res.ok) {
+          const text = await res.text();
+          setStatus("failed");
+          setError(`Server error (${res.status}): ${text.slice(0, 100)}`);
+          setIsGenerating(false);
+          return;
+        }
 
         const data = await res.json();
 

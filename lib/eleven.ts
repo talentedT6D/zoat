@@ -13,18 +13,19 @@ const PRESET_CONFIG: Record<
   aggressive: { exaggeration: 0.8, temperature: 0.8, voice: "brian" },
 };
 
+const TTS_ENDPOINT = "fal-ai/chatterbox/text-to-speech";
+
 /**
- * Generate voice using fal.ai Chatterbox TTS
- * Uses expanded VoiceTuning for fine-grained control
+ * Submit TTS to fal.ai queue (non-blocking).
+ * Returns a request_id for polling.
  */
-export async function generateVoice(
+export async function submitVoice(
   script: string,
   voicePreset: VoicePreset,
   voiceTuning: VoiceTuning
 ): Promise<string> {
   const preset = PRESET_CONFIG[voicePreset];
 
-  // User tuning overrides preset defaults
   const exaggeration = voiceTuning.exaggeration ?? preset.exaggeration;
   const temperature = Math.max(
     0.05,
@@ -32,7 +33,7 @@ export async function generateVoice(
   );
   const cfg = Math.max(0.1, Math.min(1, voiceTuning.cfg ?? voiceTuning.similarity / 10));
 
-  const result = await fal.subscribe("fal-ai/chatterbox/text-to-speech", {
+  const { request_id } = await fal.queue.submit(TTS_ENDPOINT, {
     input: {
       text: script,
       exaggeration,
@@ -42,6 +43,31 @@ export async function generateVoice(
     },
   });
 
-  const data = result.data as { audio: { url: string } };
-  return data.audio.url;
+  return request_id;
+}
+
+/**
+ * Check TTS status by polling fal.ai queue.
+ */
+export async function checkVoiceStatus(
+  requestId: string
+): Promise<{ status: string; audioUrl?: string; error?: string }> {
+  const queueStatus = await fal.queue.status(TTS_ENDPOINT, {
+    requestId,
+    logs: false,
+  });
+
+  const s = queueStatus.status as string;
+
+  if (s === "COMPLETED") {
+    const result = await fal.queue.result(TTS_ENDPOINT, { requestId });
+    const data = result.data as { audio: { url: string } };
+    return { status: "done", audioUrl: data.audio.url };
+  }
+
+  if (s === "FAILED") {
+    return { status: "failed", error: "Voice generation failed" };
+  }
+
+  return { status: "processing" };
 }

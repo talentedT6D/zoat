@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import type { GenerateRequest } from "@/types";
-import { compilePrompt, getAnimationConfig } from "@/lib/promptCompiler";
-import { generateVoice } from "@/lib/eleven";
-import { submitAvatar } from "@/lib/klingAvatar";
-
-export const maxDuration = 60;
+import { submitVoice } from "@/lib/eleven";
 
 export async function POST(req: Request) {
   try {
@@ -39,35 +35,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Compile prompt
-    const prompt = compilePrompt({
-      script: script || "",
-      gestureMode: body.gestureMode,
-      costume: body.costume,
-      mouth: body.mouth,
-      voicePreset: body.voicePreset,
-      voiceTuning: body.voiceTuning,
-      customPrompts: body.customPrompts,
-    });
-
-    // 2. Get audio URL — either generate TTS or use uploaded audio
-    let audioUrl: string;
+    // For upload mode, skip TTS — go straight to avatar submission
     if (voiceMode === "upload" && body.uploadedAudioUrl) {
-      audioUrl = body.uploadedAudioUrl;
-    } else {
-      audioUrl = await generateVoice(script, body.voicePreset, body.voiceTuning);
+      // Encode pipeline params as a compound jobId
+      const jobId = encodeJobId("avatar_pending", "", body);
+      return NextResponse.json({ success: true, jobId });
     }
 
-    // 3. Submit avatar generation to fal.ai queue (non-blocking)
-    const animation = getAnimationConfig(body.gestureMode);
-    const requestId = await submitAvatar({
-      imageUrl: baseImageUrl,
-      audioUrl,
-      prompt,
-      animation,
-    });
+    // For TTS mode, submit voice to fal queue (non-blocking)
+    const ttsRequestId = await submitVoice(script, body.voicePreset, body.voiceTuning);
 
-    return NextResponse.json({ success: true, jobId: requestId });
+    // Encode pipeline state so status endpoint can continue the pipeline
+    const jobId = encodeJobId("tts", ttsRequestId, body);
+
+    return NextResponse.json({ success: true, jobId });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
@@ -78,4 +59,24 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Encode pipeline state into a jobId string.
+ * Format: phase:requestId:base64(params)
+ */
+function encodeJobId(phase: string, requestId: string, params: GenerateRequest): string {
+  const pipelineData = {
+    baseImageUrl: params.baseImageUrl,
+    gestureMode: params.gestureMode,
+    costume: params.costume,
+    mouth: params.mouth,
+    voicePreset: params.voicePreset,
+    voiceTuning: params.voiceTuning,
+    script: params.script || "",
+    uploadedAudioUrl: params.uploadedAudioUrl,
+    customPrompts: params.customPrompts,
+  };
+  const encoded = Buffer.from(JSON.stringify(pipelineData)).toString("base64url");
+  return `${phase}:${requestId}:${encoded}`;
 }
