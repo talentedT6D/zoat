@@ -34,9 +34,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (script && script.length > 300) {
+    if (script && script.length > 2000) {
       return NextResponse.json(
-        { success: false, error: "Script exceeds 300 character limit" },
+        { success: false, error: "Script exceeds 2000 character limit" },
         { status: 400 }
       );
     }

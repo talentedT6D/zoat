@@ -198,13 +198,13 @@ export default function PromptForm({
 
           {voiceMode === "tts" && (
             <div className="mt-3 animate-fade-in">
-              <textarea value={script} onChange={(e) => setScript(e.target.value.slice(0, 300))}
+              <textarea value={script} onChange={(e) => setScript(e.target.value.slice(0, 2000))}
                 placeholder="Type your script..."
                 className="w-full h-24 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
               <div className="flex justify-between mt-1.5 px-1">
                 <span className="text-[10px] text-[#f5f0ff]/15">Markdown supported</span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${script.length > 280 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
-                  {script.length}/300
+                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${script.length > 1900 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
+                  {script.length}/2000
                 </span>
               </div>
             </div>
