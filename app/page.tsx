@@ -30,7 +30,24 @@ export default function Home() {
   const [liveVoice, setLiveVoice] = useState<VoicePreset>("sarcastic");
   const [compiledPrompt, setCompiledPrompt] = useState("");
   const [baseImagePreview, setBaseImagePreview] = useState("");
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem("zag-history");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("zag-history", JSON.stringify(history));
+    } catch {
+      // Storage full or unavailable — silently ignore
+    }
+  }, [history]);
 
   useEffect(() => {
     return () => {
