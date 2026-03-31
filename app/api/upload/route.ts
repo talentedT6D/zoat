@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 
-fal.config({ credentials: process.env.FAL_KEY! });
+fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
 
 export async function POST(req: Request) {
   try {
