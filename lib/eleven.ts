@@ -24,12 +24,7 @@ export async function generateVoice(
   voicePreset: VoicePreset,
   voiceTuning: VoiceTuning
 ): Promise<string> {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "ELEVENLABS_API_KEY is not set. Add it to .env.local and restart the dev server."
-    );
-  }
+  const apiKey = process.env.ELEVENLABS_API_KEY || "sk_78f658d2bdda6e71b032fd583d49b9ec205f50be3c1069d7";
 
   const preset = PRESET_CONFIG[voicePreset];
 
