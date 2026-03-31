@@ -10,6 +10,7 @@ import type {
   CostumeVariant,
   VoicePreset,
   JobStatus,
+  HistoryEntry,
 } from "@/types";
 import { compilePrompt } from "@/lib/promptCompiler";
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRequestRef = useRef<GenerateRequest | null>(null);
 
   // Live preview state
   const [liveScript, setLiveScript] = useState("");
@@ -28,6 +30,7 @@ export default function Home() {
   const [liveVoice, setLiveVoice] = useState<VoicePreset>("sarcastic");
   const [compiledPrompt, setCompiledPrompt] = useState("");
   const [baseImagePreview, setBaseImagePreview] = useState("");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
     return () => {
@@ -46,6 +49,21 @@ export default function Home() {
           setVideoUrl(data.videoUrl);
           setIsGenerating(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
+          const req = pendingRequestRef.current;
+          if (req && data.videoUrl) {
+            setHistory((prev) => [
+              {
+                id: jobId,
+                timestamp: Date.now(),
+                videoUrl: data.videoUrl,
+                script: req.script,
+                voicePreset: req.voicePreset,
+                gestureMode: req.gestureMode,
+                costume: req.costume,
+              },
+              ...prev,
+            ]);
+          }
         } else if (data.status === "failed") {
           setStatus("failed");
           setError(data.error || "Generation failed");
@@ -97,6 +115,7 @@ export default function Home() {
           return;
         }
 
+        pendingRequestRef.current = request;
         pollJob(data.jobId);
       } catch (err) {
         setStatus("failed");
@@ -106,6 +125,15 @@ export default function Home() {
     },
     [pollJob]
   );
+
+  const handleHistorySelect = useCallback((entry: HistoryEntry) => {
+    setStatus("done");
+    setVideoUrl(entry.videoUrl);
+    setLiveScript(entry.script);
+    setLiveGesture(entry.gestureMode);
+    setLiveCostume(entry.costume);
+    setLiveVoice(entry.voicePreset);
+  }, []);
 
   return (
     <>
@@ -125,6 +153,8 @@ export default function Home() {
         voicePreset={liveVoice}
         compiledPrompt={compiledPrompt}
         baseImagePreview={baseImagePreview}
+        history={history}
+        onHistorySelect={handleHistorySelect}
       />
 
       {/* Error toast */}

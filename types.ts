@@ -59,6 +59,17 @@ export interface CustomPrompts {
 // === Job ===
 export type JobStatus = "processing" | "done" | "failed";
 
+// === History ===
+export interface HistoryEntry {
+  id: string;
+  timestamp: number;
+  videoUrl: string;
+  script: string;
+  voicePreset: VoicePreset;
+  gestureMode: GestureMode;
+  costume: CostumeVariant;
+}
+
 // === API ===
 export interface GenerateRequest {
   script: string;

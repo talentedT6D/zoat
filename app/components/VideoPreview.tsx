@@ -1,6 +1,7 @@
 "use client";
 
-import type { GestureMode, CostumeVariant, VoicePreset, JobStatus } from "@/types";
+import { useState } from "react";
+import type { GestureMode, CostumeVariant, VoicePreset, JobStatus, HistoryEntry } from "@/types";
 
 interface VideoPreviewProps {
   status: "idle" | JobStatus;
@@ -11,6 +12,8 @@ interface VideoPreviewProps {
   voicePreset: VoicePreset;
   compiledPrompt: string;
   baseImagePreview: string;
+  history: HistoryEntry[];
+  onHistorySelect: (entry: HistoryEntry) => void;
 }
 
 const COSTUME_LABELS: Record<CostumeVariant, string> = {
@@ -26,8 +29,10 @@ const STATUS_CONFIG = {
 
 export default function VideoPreview({
   status, videoUrl, script, gestureMode, costume, voicePreset, compiledPrompt, baseImagePreview,
+  history, onHistorySelect,
 }: VideoPreviewProps) {
   const cfg = STATUS_CONFIG[status];
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col bg-[#08060e] relative overflow-hidden">
@@ -49,8 +54,25 @@ export default function VideoPreview({
             {cfg.label}
           </span>
         </div>
-        <div className="text-[10px] text-[#f5f0ff]/10 tracking-[0.2em] font-[family-name:var(--font-heading)]">
-          ZAG OF ALL TRADES
+        <div className="flex items-center gap-4">
+          {history.length > 0 && (
+            <button
+              onClick={() => setHistoryOpen(!historyOpen)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
+                historyOpen
+                  ? "bg-[#9b51e0]/15 text-[#b87df5]"
+                  : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/25 hover:text-[#f5f0ff]/40"
+              }`}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History ({history.length})
+            </button>
+          )}
+          <div className="text-[10px] text-[#f5f0ff]/10 tracking-[0.2em] font-[family-name:var(--font-heading)]">
+            ZAG OF ALL TRADES
+          </div>
         </div>
       </div>
 
@@ -128,6 +150,67 @@ export default function VideoPreview({
           <p className="text-[9px] text-[#f5f0ff]/12 font-[family-name:var(--font-mono)] truncate">
             prompt: {compiledPrompt.slice(0, 140)}...
           </p>
+        </div>
+      )}
+
+      {/* ── History Panel ── */}
+      {historyOpen && history.length > 0 && (
+        <div className="absolute inset-0 z-20 bg-[#08060e]/95 backdrop-blur-sm flex flex-col animate-fade-in">
+          <div className="flex items-center justify-between px-8 py-5 border-b border-[#9b51e0]/[0.08]">
+            <span className="text-[11px] font-[family-name:var(--font-heading)] font-medium text-[#f5f0ff]/40 uppercase tracking-[0.18em]">
+              Generation History
+            </span>
+            <button
+              onClick={() => setHistoryOpen(false)}
+              className="text-[#f5f0ff]/20 hover:text-[#f5f0ff]/50 transition-colors cursor-pointer"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-8 py-5">
+            <div className="grid grid-cols-2 gap-4">
+              {history.map((entry) => (
+                <button
+                  key={entry.id}
+                  onClick={() => { onHistorySelect(entry); setHistoryOpen(false); }}
+                  className="group glass rounded-xl overflow-hidden text-left transition-all hover:border-[#9b51e0]/20 cursor-pointer"
+                >
+                  <div className="aspect-video bg-[#0a0814] relative">
+                    <video
+                      src={entry.videoUrl}
+                      muted
+                      className="w-full h-full object-cover"
+                      onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                      onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#08060e]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-[#9b51e0]/20 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-[#b87df5]" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/50 line-clamp-2 leading-relaxed">
+                      &ldquo;{entry.script}&rdquo;
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[9px] text-[#9b51e0]/50 font-[family-name:var(--font-body)] capitalize">{entry.voicePreset}</span>
+                      <span className="w-px h-2.5 bg-[#9b51e0]/10" />
+                      <span className="text-[9px] text-[#f5f0ff]/20 font-[family-name:var(--font-body)]">Type {entry.gestureMode}</span>
+                      <span className="w-px h-2.5 bg-[#9b51e0]/10" />
+                      <span className="text-[9px] text-[#f5f0ff]/20 font-[family-name:var(--font-body)]">
+                        {new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
