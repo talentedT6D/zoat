@@ -18,12 +18,16 @@ interface AvatarParams {
 export async function generateAvatar(params: AvatarParams): Promise<string> {
   const { imageUrl, audioUrl, prompt } = params;
 
+  // Scale guidance based on how much movement is requested
+  // More movement description → higher guidance to follow the prompt
+  const guidanceScale = prompt.length > 800 ? 1.5 : 1;
+
   const result = await fal.subscribe("fal-ai/creatify/aurora", {
     input: {
       image_url: imageUrl,
       audio_url: audioUrl,
       prompt: buildAuroraPrompt(prompt),
-      guidance_scale: 1,
+      guidance_scale: guidanceScale,
       audio_guidance_scale: 2,
       resolution: "720p",
     },
@@ -37,5 +41,5 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
  * Condense the full compiled prompt into Aurora-optimized guidance
  */
 function buildAuroraPrompt(compiledPrompt: string): string {
-  return `9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera. ${compiledPrompt.slice(0, 500)}`;
+  return `9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera. ${compiledPrompt.slice(0, 700)}`;
 }

@@ -38,6 +38,13 @@ export interface MouthMechanics {
   jawClose: number;
 }
 
+// === Body Movement ===
+export interface BodyMovement {
+  neck: number;   // 0–10: 0=locked, 10=full tilt/nod/turn
+  hands: number;  // 0–10: 0=at sides, 10=big expressive gestures
+  body: number;   // 0–10: 0=statue, 10=full torso sway/lean
+}
+
 // === Animation ===
 export interface AnimationConfig {
   mouth: string;
@@ -46,6 +53,8 @@ export interface AnimationConfig {
   gestures: string;
   end_action?: string;
   neck_movement?: string;
+  hand_movement?: string;
+  body_sway?: string;
 }
 
 // === Custom Prompts ===
@@ -76,6 +85,7 @@ export interface GenerateRequest {
   gestureMode: GestureMode;
   costume: CostumeVariant;
   mouth: MouthMechanics;
+  bodyMovement: BodyMovement;
   voicePreset: VoicePreset;
   voiceTuning: VoiceTuning;
   voiceMode: VoiceMode;

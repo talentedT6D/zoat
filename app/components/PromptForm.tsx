@@ -8,6 +8,7 @@ import type {
   VoicePreset,
   VoiceMode,
   MouthMechanics,
+  BodyMovement,
   VoiceTuning,
   GenerateRequest,
   CustomPrompts,
@@ -49,6 +50,9 @@ export default function PromptForm({
   const [mouth, setMouth] = useState<MouthMechanics>({ openWidth: 8, speed: 6, jawClose: 9 });
   const [voiceTuning, setVoiceTuning] = useState<VoiceTuning>({
     stability: 7, similarity: 6, speed: 1.0, pitch: 0, exaggeration: 0.3, cfg: 0.5,
+  });
+  const [bodyMovement, setBodyMovement] = useState<BodyMovement>({
+    neck: 3, hands: 3, body: 2,
   });
 
   const DEFAULT_IMAGE_URL = "https://v3b.fal.media/files/b/0a943e13/PBo3G2TETzi7_b2BUfuqS_1774873793470.png";
@@ -112,7 +116,7 @@ export default function PromptForm({
     if (customPrompts.mouth?.trim()) activeCustom.mouth = customPrompts.mouth.trim();
 
     onGenerate({
-      script: script.trim(), gestureMode, costume, mouth, voicePreset, voiceTuning,
+      script: script.trim(), gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning,
       voiceMode, baseImageUrl,
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
       customPrompts: Object.keys(activeCustom).length > 0 ? activeCustom : undefined,
@@ -355,6 +359,21 @@ export default function PromptForm({
           <CustomPromptInput sectionKey="mouth" value={customPrompts.mouth || ""} isOpen={!!openCustom.mouth}
             onToggle={() => toggleCustom("mouth")} onChange={(v) => setCustom("mouth", v)}
             placeholder="e.g. Exaggerated cartoon lip-sync, snappy jaw on consonants..." />
+        </Section>
+
+        {/* ── Body Movement ── */}
+        <Section label="Body Movement">
+          <div className="space-y-3">
+            <Slider label="Neck" value={bodyMovement.neck} min={0} max={10} step={1}
+              formatValue={(v) => v <= 2 ? "Locked" : v <= 5 ? "Slight" : v <= 8 ? "Moderate" : "Full"}
+              onChange={(v) => setBodyMovement((p) => ({ ...p, neck: v }))} />
+            <Slider label="Hands" value={bodyMovement.hands} min={0} max={10} step={1}
+              formatValue={(v) => v <= 2 ? "None" : v <= 5 ? "Subtle" : v <= 8 ? "Moderate" : "Expressive"}
+              onChange={(v) => setBodyMovement((p) => ({ ...p, hands: v }))} />
+            <Slider label="Body" value={bodyMovement.body} min={0} max={10} step={1}
+              formatValue={(v) => v <= 2 ? "Statue" : v <= 5 ? "Minimal" : v <= 8 ? "Moderate" : "Dynamic"}
+              onChange={(v) => setBodyMovement((p) => ({ ...p, body: v }))} />
+          </div>
         </Section>
       </div>
 

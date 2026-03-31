@@ -68,6 +68,7 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
     gestureMode,
     costume,
     mouth,
+    bodyMovement,
     voicePreset,
     voiceTuning,
     voiceMode,
@@ -82,6 +83,7 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
     gestureMode,
     costume,
     mouth,
+    bodyMovement: bodyMovement || { neck: 3, hands: 3, body: 2 },
     voicePreset,
     voiceTuning,
     customPrompts,
@@ -96,7 +98,7 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
   }
 
   // 3. Generate avatar — user-uploaded base image
-  const animation = getAnimationConfig(gestureMode);
+  const animation = getAnimationConfig(gestureMode, bodyMovement || { neck: 3, hands: 3, body: 2 });
 
   const videoUrl = await generateAvatar({
     imageUrl: baseImageUrl,

@@ -2,6 +2,7 @@ import type {
   GestureMode,
   CostumeVariant,
   MouthMechanics,
+  BodyMovement,
   VoicePreset,
   VoiceTuning,
   AnimationConfig,
@@ -86,6 +87,44 @@ function compileMouthBlock(mouth: MouthMechanics): string {
   - Exaggerated articulation [speed: ${mouth.speed}/10]`;
 }
 
+// === Body Movement → Prompt Injection ===
+function compileBodyMovementBlock(bm: BodyMovement): string {
+  // Neck
+  const neckDesc =
+    bm.neck <= 2
+      ? "Neck LOCKED — no tilting, nodding, or turning"
+      : bm.neck <= 5
+        ? "Slight neck movement — small nods and subtle tilts allowed"
+        : bm.neck <= 8
+          ? "Moderate neck movement — natural nodding, tilting, and turning"
+          : "Full neck movement — expressive head tilts, nods, and turns";
+
+  // Hands
+  const handDesc =
+    bm.hands <= 2
+      ? "Hands locked at sides — no gestures"
+      : bm.hands <= 5
+        ? "Small hand gestures — subtle pointing, light emphasis"
+        : bm.hands <= 8
+          ? "Moderate hand gestures — natural conversational hand movement, open palms"
+          : "Big expressive hand gestures — wide arm sweeps, emphatic pointing, animated emphasis";
+
+  // Body
+  const bodyDesc =
+    bm.body <= 2
+      ? "Body LOCKED — torso completely still, statue-like"
+      : bm.body <= 5
+        ? "Minimal body movement — slight weight shifts, subtle lean"
+        : bm.body <= 8
+          ? "Moderate body movement — natural torso sway, leaning into points"
+          : "Full body movement — dynamic torso sway, leans, shoulder rolls, energetic shifts";
+
+  return `Body Movement:
+  - ${neckDesc} [neck: ${bm.neck}/10]
+  - ${handDesc} [hands: ${bm.hands}/10]
+  - ${bodyDesc} [body: ${bm.body}/10]`;
+}
+
 // === Gesture Rules ===
 function compileGestureBlock(mode: GestureMode): string {
   if (mode === "A") {
@@ -105,22 +144,23 @@ function compileGestureBlock(mode: GestureMode): string {
 }
 
 // === Animation Config ===
-export function getAnimationConfig(mode: GestureMode): AnimationConfig {
-  if (mode === "A") {
-    return {
-      mouth: "exaggerated",
-      eyes: "fixed",
-      body: "locked",
-      gestures: "A",
-      end_action: "head_pat",
-    };
-  }
+function intensityLabel(value: number): string {
+  if (value <= 2) return "none";
+  if (value <= 5) return "slight";
+  if (value <= 8) return "moderate";
+  return "full";
+}
+
+export function getAnimationConfig(mode: GestureMode, bm: BodyMovement): AnimationConfig {
   return {
     mouth: "exaggerated",
-    eyes: "natural",
-    body: "minimal",
-    gestures: "B",
-    neck_movement: "slight",
+    eyes: mode === "A" ? "fixed" : "natural",
+    body: intensityLabel(bm.body),
+    gestures: mode,
+    end_action: mode === "A" ? "head_pat" : undefined,
+    neck_movement: intensityLabel(bm.neck),
+    hand_movement: intensityLabel(bm.hands),
+    body_sway: intensityLabel(bm.body),
   };
 }
 
@@ -130,11 +170,12 @@ export function compilePrompt(params: {
   gestureMode: GestureMode;
   costume: CostumeVariant;
   mouth: MouthMechanics;
+  bodyMovement: BodyMovement;
   voicePreset: VoicePreset;
   voiceTuning: VoiceTuning;
   customPrompts?: CustomPrompts;
 }): string {
-  const { script, gestureMode, costume, mouth, voicePreset, voiceTuning, customPrompts } =
+  const { script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, customPrompts } =
     params;
 
   // Each block: use custom prompt if provided, otherwise use the preset
@@ -154,6 +195,8 @@ export function compilePrompt(params: {
     ? `Gesture Rules (Custom):\n  ${customPrompts.gesture}`
     : compileGestureBlock(gestureMode);
 
+  const bodyMovementBlock = compileBodyMovementBlock(bodyMovement);
+
   const blocks = [
     `Character: ZAG (crocodile mascot)`,
     costumeBlock,
@@ -161,6 +204,7 @@ export function compilePrompt(params: {
     voiceBlock,
     `Voice:\n  - Preset: ${voicePreset.charAt(0).toUpperCase() + voicePreset.slice(1)}   Stability: ${(voiceTuning.stability / 10).toFixed(1)}   Similarity boost: ${(voiceTuning.similarity / 10).toFixed(1)}`,
     gestureBlock,
+    bodyMovementBlock,
     `Performance:\n  - Direct to camera   9:16 vertical   Green screen`,
     `Script:\n"${script}"`,
   ];

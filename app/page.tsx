@@ -110,6 +110,7 @@ export default function Home() {
         gestureMode: request.gestureMode,
         costume: request.costume,
         mouth: request.mouth,
+        bodyMovement: request.bodyMovement,
         voicePreset: request.voicePreset,
         voiceTuning: request.voiceTuning,
         customPrompts: request.customPrompts,
