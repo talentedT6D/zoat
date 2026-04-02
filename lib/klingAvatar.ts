@@ -1,8 +1,8 @@
-import { fal } from "@fal-ai/client";
 import type { AnimationConfig } from "@/types";
 
-// Configure fal client
-fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
+const HIGGSFIELD_API_KEY = process.env.HIGGSFIELD_API_KEY || "30d30b7f-2099-4276-940e-e367bec12ac9:743f29c61d87a0936891621382aebf83974395a198b038b129900a725851db44";
+const HIGGSFIELD_API_URL = "https://api.higgsfield.ai/v1/speak/higgsfield";
+const HIGGSFIELD_STATUS_URL = "https://api.higgsfield.ai/v1/generations";
 
 interface AvatarParams {
   imageUrl: string;
@@ -12,34 +12,82 @@ interface AvatarParams {
 }
 
 /**
- * Generate talking avatar video using fal.ai Creatify Aurora
- * Takes ZAG base image + audio → returns MP4 video URL
+ * Generate talking avatar video using Higgsfield Cloud API
+ * Takes base image + audio → returns MP4 video URL
  */
 export async function generateAvatar(params: AvatarParams): Promise<string> {
-  const { imageUrl, audioUrl, prompt } = params;
+  const { imageUrl, audioUrl } = params;
 
-  // Scale guidance based on how much movement is requested
-  // More movement description → higher guidance to follow the prompt
-  const guidanceScale = prompt.length > 800 ? 1.5 : 1;
-
-  const result = await fal.subscribe("fal-ai/creatify/aurora", {
-    input: {
-      image_url: imageUrl,
-      audio_url: audioUrl,
-      prompt: buildAuroraPrompt(prompt),
-      guidance_scale: guidanceScale,
-      audio_guidance_scale: 2,
-      resolution: "720p",
+  // 1. Submit generation job
+  const submitRes = await fetch(HIGGSFIELD_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Key ${HIGGSFIELD_API_KEY}`,
     },
+    body: JSON.stringify({
+      task: "talking-avatar",
+      input_image: imageUrl,
+      input_audio: audioUrl,
+      quality: "high",
+    }),
   });
 
-  const data = result.data as { video: { url: string } };
-  return data.video.url;
+  if (!submitRes.ok) {
+    const errText = await submitRes.text();
+    throw new Error(`Higgsfield API error (${submitRes.status}): ${errText}`);
+  }
+
+  const submitData = await submitRes.json();
+  const generationId = submitData.generation_id || submitData.request_id || submitData.id;
+
+  if (!generationId) {
+    throw new Error(`Higgsfield API error: no generation ID returned. Response: ${JSON.stringify(submitData)}`);
+  }
+
+  // 2. Poll for completion
+  const videoUrl = await pollForCompletion(generationId);
+  return videoUrl;
 }
 
 /**
- * Condense the full compiled prompt into Aurora-optimized guidance
+ * Poll Higgsfield API until the video is ready
  */
-function buildAuroraPrompt(compiledPrompt: string): string {
-  return `9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera. ${compiledPrompt.slice(0, 700)}`;
+async function pollForCompletion(generationId: string): Promise<string> {
+  const maxAttempts = 120; // 10 minutes at 5s intervals
+  const interval = 5000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, interval));
+
+    const res = await fetch(`${HIGGSFIELD_STATUS_URL}/${generationId}`, {
+      headers: {
+        "Authorization": `Key ${HIGGSFIELD_API_KEY}`,
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Higgsfield status check error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    const status = data.status;
+
+    if (status === "completed") {
+      const videoUrl = data.output_url || data.media_urls?.[0];
+      if (!videoUrl) {
+        throw new Error("Higgsfield completed but no video URL returned");
+      }
+      return videoUrl;
+    }
+
+    if (status === "failed" || status === "nsfw" || status === "cancelled") {
+      throw new Error(`Higgsfield generation ${status}: ${data.error || "Unknown error"}`);
+    }
+
+    // Otherwise still queued/in_progress — keep polling
+  }
+
+  throw new Error("Higgsfield generation timed out after 10 minutes");
 }
