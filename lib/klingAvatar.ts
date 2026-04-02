@@ -6,7 +6,7 @@ const HIGGSFIELD_BASE = "https://platform.higgsfield.ai";
  * Endpoint: /v1/speak/higgsfield (from official SDK)
  * Returns the request ID for polling
  */
-export async function submitAvatar(imageUrl: string, audioUrl: string): Promise<string> {
+export async function submitAvatar(imageUrl: string, audioUrl: string, prompt?: string): Promise<string> {
   const submitRes = await fetch(`${HIGGSFIELD_BASE}/v1/speak/higgsfield`, {
     method: "POST",
     headers: {
@@ -17,6 +17,7 @@ export async function submitAvatar(imageUrl: string, audioUrl: string): Promise<
       params: {
         input_image: { type: "image_url", image_url: imageUrl },
         input_audio: { type: "audio_url", audio_url: audioUrl },
+        prompt: prompt || "Natural speaking presentation, direct to camera",
         quality: "mid",
       },
     }),

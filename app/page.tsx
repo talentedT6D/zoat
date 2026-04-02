@@ -142,6 +142,7 @@ export default function Home() {
           body: JSON.stringify({
             imageUrl: request.baseImageUrl,
             audioUrl: ttsData.audioUrl,
+            prompt: request.script,
           }),
         });
 

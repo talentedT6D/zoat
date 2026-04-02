@@ -3,7 +3,7 @@ import { submitAvatar } from "@/lib/klingAvatar";
 
 export async function POST(req: Request) {
   try {
-    const { imageUrl, audioUrl } = await req.json();
+    const { imageUrl, audioUrl, prompt } = await req.json();
 
     if (!imageUrl || !audioUrl) {
       return NextResponse.json(
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const generationId = await submitAvatar(imageUrl, audioUrl);
+    const generationId = await submitAvatar(imageUrl, audioUrl, prompt);
     return NextResponse.json({ success: true, generationId });
   } catch (error) {
     console.error("Submit video error:", error);
