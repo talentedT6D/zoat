@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Preloader from "./components/Preloader";
 import PromptForm from "./components/PromptForm";
 import VideoPreview from "./components/VideoPreview";
@@ -20,6 +20,8 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRequestRef = useRef<GenerateRequest | null>(null);
 
   // Live preview state
   const [liveScript, setLiveScript] = useState("");
@@ -43,9 +45,54 @@ export default function Home() {
     try {
       localStorage.setItem("zag-history", JSON.stringify(history));
     } catch {
-      // Storage full or unavailable — silently ignore
+      // Storage full or unavailable
     }
   }, [history]);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  const pollVideo = useCallback((generationId: string) => {
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/video-status/${generationId}`);
+        const data = await res.json();
+
+        if (data.status === "done" && data.videoUrl) {
+          setStatus("done");
+          setVideoUrl(data.videoUrl);
+          setIsGenerating(false);
+          if (pollingRef.current) clearInterval(pollingRef.current);
+
+          const req = pendingRequestRef.current;
+          if (req) {
+            setHistory((prev) => [
+              {
+                id: generationId,
+                timestamp: Date.now(),
+                videoUrl: data.videoUrl,
+                script: req.script,
+                voicePreset: req.voicePreset,
+                gestureMode: req.gestureMode,
+                costume: req.costume,
+              },
+              ...prev,
+            ]);
+          }
+        } else if (data.status === "failed") {
+          setStatus("failed");
+          setError(data.error || "Video generation failed");
+          setIsGenerating(false);
+          if (pollingRef.current) clearInterval(pollingRef.current);
+        }
+      } catch {
+        // Continue polling on network errors
+      }
+    }, 3000);
+  }, []);
 
   const handleGenerate = useCallback(
     async (request: GenerateRequest) => {
@@ -87,31 +134,16 @@ export default function Home() {
           return;
         }
 
-        // Synchronous response — video URL returned directly
-        setStatus("done");
-        setVideoUrl(data.videoUrl);
-        setIsGenerating(false);
-
-        // Add to history
-        setHistory((prev) => [
-          {
-            id: `${Date.now()}`,
-            timestamp: Date.now(),
-            videoUrl: data.videoUrl,
-            script: request.script,
-            voicePreset: request.voicePreset,
-            gestureMode: request.gestureMode,
-            costume: request.costume,
-          },
-          ...prev,
-        ]);
+        // Start polling Higgsfield for the video
+        pendingRequestRef.current = request;
+        pollVideo(data.generationId);
       } catch (err) {
         setStatus("failed");
         setError(err instanceof Error ? err.message : "Network error");
         setIsGenerating(false);
       }
     },
-    []
+    [pollVideo]
   );
 
   const handleHistorySelect = useCallback((entry: HistoryEntry) => {

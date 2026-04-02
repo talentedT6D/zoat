@@ -1,24 +1,12 @@
-import type { AnimationConfig } from "@/types";
-
 const HIGGSFIELD_API_KEY = process.env.HIGGSFIELD_API_KEY || "30d30b7f-2099-4276-940e-e367bec12ac9:743f29c61d87a0936891621382aebf83974395a198b038b129900a725851db44";
 const HIGGSFIELD_API_URL = "https://api.higgsfield.ai/v1/speak/higgsfield";
 const HIGGSFIELD_STATUS_URL = "https://api.higgsfield.ai/v1/generations";
 
-interface AvatarParams {
-  imageUrl: string;
-  audioUrl: string;
-  prompt: string;
-  animation: AnimationConfig;
-}
-
 /**
- * Generate talking avatar video using Higgsfield Cloud API
- * Takes base image + audio → returns MP4 video URL
+ * Submit a talking avatar job to Higgsfield Cloud API
+ * Returns the generation ID for polling
  */
-export async function generateAvatar(params: AvatarParams): Promise<string> {
-  const { imageUrl, audioUrl } = params;
-
-  // 1. Submit generation job
+export async function submitAvatar(imageUrl: string, audioUrl: string): Promise<string> {
   const submitRes = await fetch(HIGGSFIELD_API_URL, {
     method: "POST",
     headers: {
@@ -45,49 +33,41 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
     throw new Error(`Higgsfield API error: no generation ID returned. Response: ${JSON.stringify(submitData)}`);
   }
 
-  // 2. Poll for completion
-  const videoUrl = await pollForCompletion(generationId);
-  return videoUrl;
+  return generationId;
 }
 
 /**
- * Poll Higgsfield API until the video is ready
+ * Check status of a Higgsfield generation
+ * Returns { status, videoUrl } — videoUrl is set when completed
  */
-async function pollForCompletion(generationId: string): Promise<string> {
-  const maxAttempts = 300; // 10 minutes at 2s intervals
-  const interval = 2000;
+export async function checkAvatarStatus(generationId: string): Promise<{
+  status: "processing" | "done" | "failed";
+  videoUrl?: string;
+  error?: string;
+}> {
+  const res = await fetch(`${HIGGSFIELD_STATUS_URL}/${generationId}`, {
+    headers: {
+      "Authorization": `Key ${HIGGSFIELD_API_KEY}`,
+    },
+  });
 
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, interval));
-
-    const res = await fetch(`${HIGGSFIELD_STATUS_URL}/${generationId}`, {
-      headers: {
-        "Authorization": `Key ${HIGGSFIELD_API_KEY}`,
-      },
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Higgsfield status check error (${res.status}): ${errText}`);
-    }
-
-    const data = await res.json();
-    const status = data.status;
-
-    if (status === "completed") {
-      const videoUrl = data.output_url || data.media_urls?.[0];
-      if (!videoUrl) {
-        throw new Error("Higgsfield completed but no video URL returned");
-      }
-      return videoUrl;
-    }
-
-    if (status === "failed" || status === "nsfw" || status === "cancelled") {
-      throw new Error(`Higgsfield generation ${status}: ${data.error || "Unknown error"}`);
-    }
-
-    // Otherwise still queued/in_progress — keep polling
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Higgsfield status check error (${res.status}): ${errText}`);
   }
 
-  throw new Error("Higgsfield generation timed out after 10 minutes");
+  const data = await res.json();
+  const status = data.status;
+
+  if (status === "completed") {
+    const videoUrl = data.output_url || data.media_urls?.[0];
+    return { status: "done", videoUrl };
+  }
+
+  if (status === "failed" || status === "nsfw" || status === "cancelled") {
+    return { status: "failed", error: data.error || `Generation ${status}` };
+  }
+
+  // queued / in_progress
+  return { status: "processing" };
 }
