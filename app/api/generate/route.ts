@@ -3,6 +3,7 @@ import type { GenerateRequest } from "@/types";
 import { compilePrompt, getAnimationConfig } from "@/lib/promptCompiler";
 import { generateVoice } from "@/lib/eleven";
 import { generateAvatar } from "@/lib/klingAvatar";
+import { parseAnnotations } from "@/lib/scriptAnnotations";
 
 export const maxDuration = 300; // 5 minutes for Vercel Pro
 
@@ -68,8 +69,11 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     customPrompts,
   } = params;
 
+  // Parse inline annotations from script
+  const parsed = parseAnnotations(script || "");
+
   const prompt = compilePrompt({
-    script: script || "",
+    script: parsed.cleanScript,
     gestureMode,
     costume,
     mouth,
@@ -77,13 +81,18 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     voicePreset,
     voiceTuning,
     customPrompts,
+    annotationDirections: {
+      gestures: parsed.gestureDirections,
+      tone: parsed.toneDirections,
+    },
   });
 
   let audioUrl: string;
   if (voiceMode === "upload" && uploadedAudioUrl) {
     audioUrl = uploadedAudioUrl;
   } else {
-    audioUrl = await generateVoice(script, voicePreset, voiceTuning);
+    // Send preprocessed TTS text (pauses → ellipsis, loud → CAPS, tags stripped)
+    audioUrl = await generateVoice(parsed.ttsText, voicePreset, voiceTuning);
   }
 
   const animation = getAnimationConfig(gestureMode, bodyMovement || { neck: 3, hands: 3, body: 2 });

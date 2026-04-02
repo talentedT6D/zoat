@@ -174,8 +174,9 @@ export function compilePrompt(params: {
   voicePreset: VoicePreset;
   voiceTuning: VoiceTuning;
   customPrompts?: CustomPrompts;
+  annotationDirections?: { gestures: string; tone: string };
 }): string {
-  const { script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, customPrompts } =
+  const { script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, customPrompts, annotationDirections } =
     params;
 
   // Each block: use custom prompt if provided, otherwise use the preset
@@ -197,8 +198,16 @@ export function compilePrompt(params: {
 
   const bodyMovementBlock = compileBodyMovementBlock(bodyMovement);
 
+  // Build inline cues block from annotations (if any)
+  const inlineCues = [
+    annotationDirections?.gestures,
+    annotationDirections?.tone,
+  ].filter(Boolean).join(" ");
+  const inlineCuesBlock = inlineCues ? `Inline Cues:\n  - ${inlineCues.slice(0, 150)}` : "";
+
   const blocks = [
     `Character: ZAG (crocodile mascot)`,
+    inlineCuesBlock,
     costumeBlock,
     mouthBlock,
     voiceBlock,

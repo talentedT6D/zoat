@@ -13,6 +13,7 @@ import type {
   GenerateRequest,
   CustomPrompts,
 } from "@/types";
+import { stripAllAnnotations } from "@/lib/scriptAnnotations";
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
   { id: "default", label: "Default" },
@@ -74,6 +75,33 @@ export default function PromptForm({
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertAnnotation = useCallback((tag: string, isWrapper: boolean) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = script.slice(start, end);
+
+    let newText: string;
+    let cursorPos: number;
+    if (isWrapper && selected) {
+      newText = script.slice(0, start) + `[${tag}]${selected}[/${tag}]` + script.slice(end);
+      cursorPos = end + tag.length * 2 + 5;
+    } else if (isWrapper) {
+      newText = script.slice(0, start) + `[${tag}][/${tag}]` + script.slice(end);
+      cursorPos = start + tag.length + 2;
+    } else {
+      newText = script.slice(0, start) + `[${tag}]` + script.slice(end);
+      cursorPos = start + tag.length + 2;
+    }
+    setScript(newText.slice(0, 2000));
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(cursorPos, cursorPos); }, 0);
+  }, [script]);
+
+  const cleanLength = stripAllAnnotations(script).length;
+  const hasAnnotations = cleanLength !== script.length;
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -198,13 +226,30 @@ export default function PromptForm({
 
           {voiceMode === "tts" && (
             <div className="mt-3 animate-fade-in">
-              <textarea value={script} onChange={(e) => setScript(e.target.value.slice(0, 2000))}
-                placeholder="Type your script..."
-                className="w-full h-24 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
+              {/* Annotation toolbar */}
+              <div className="flex items-center gap-1 mb-2 flex-wrap">
+                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mr-1">Audio+Video</span>
+                <AnnotationBtn label="Pause" onClick={() => insertAnnotation("pause", false)} />
+                <AnnotationBtn label="Long Pause" onClick={() => insertAnnotation("long pause", false)} />
+                <AnnotationBtn label="LOUD" onClick={() => insertAnnotation("loud", true)} />
+                <span className="w-px h-4 bg-[#9b51e0]/10 mx-1" />
+                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mr-1">Video Hints</span>
+                <AnnotationBtn label="Wave" onClick={() => insertAnnotation("wave", false)} />
+                <AnnotationBtn label="Point" onClick={() => insertAnnotation("point", false)} />
+                <AnnotationBtn label="Nod" onClick={() => insertAnnotation("nod", false)} />
+                <AnnotationBtn label="Shrug" onClick={() => insertAnnotation("shrug", false)} />
+                <AnnotationBtn label="Whisper" onClick={() => insertAnnotation("whisper", true)} />
+                <AnnotationBtn label="Slow" onClick={() => insertAnnotation("slow", true)} />
+              </div>
+              <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 2000))}
+                placeholder="Type your script... Use toolbar to add pauses, gestures, and voice cues"
+                className="w-full h-28 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
               <div className="flex justify-between mt-1.5 px-1">
-                <span className="text-[10px] text-[#f5f0ff]/15">Markdown supported</span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${script.length > 1900 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
-                  {script.length}/2000
+                <span className="text-[10px] text-[#f5f0ff]/15">
+                  {hasAnnotations ? `${cleanLength} chars + annotations` : "Annotations supported"}
+                </span>
+                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 1900 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
+                  {cleanLength}/2000
                 </span>
               </div>
             </div>
@@ -445,6 +490,15 @@ function CustomPromptInput({ sectionKey, value, isOpen, onToggle, onChange, plac
         </div>
       )}
     </div>
+  );
+}
+
+function AnnotationBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium glass glass-hover text-[#f5f0ff]/30 hover:text-[#b87df5] transition-all cursor-pointer">
+      {label}
+    </button>
   );
 }
 
