@@ -14,6 +14,44 @@ import type {
 } from "@/types";
 import { compilePrompt } from "@/lib/promptCompiler";
 
+/**
+ * Resize an image URL to max 768px via canvas, upload the result
+ */
+async function resizeImageForVideo(imageUrl: string): Promise<string> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = reject;
+    img.src = imageUrl;
+  });
+
+  const maxSize = 768;
+  let { width, height } = img;
+  if (width > maxSize || height > maxSize) {
+    const scale = maxSize / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.8)
+  );
+
+  const formData = new FormData();
+  formData.append("file", new File([blob], "image.jpg", { type: "image/jpeg" }));
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.url;
+}
+
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<"idle" | JobStatus>("idle");
@@ -135,12 +173,15 @@ export default function Home() {
           return;
         }
 
-        // Step 2: Submit video generation
+        // Step 2: Resize image for Higgsfield
+        const smallImageUrl = await resizeImageForVideo(request.baseImageUrl);
+
+        // Step 3: Submit video generation
         const videoRes = await fetch("/api/submit-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            imageUrl: request.baseImageUrl,
+            imageUrl: smallImageUrl,
             audioUrl: ttsData.audioUrl,
             prompt: request.script,
           }),
