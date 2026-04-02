@@ -15,8 +15,8 @@ export async function submitAvatar(imageUrl: string, audioUrl: string): Promise<
     },
     body: JSON.stringify({
       params: {
-        input_image: imageUrl,
-        input_audio: audioUrl,
+        input_image: { type: "image_url", image_url: imageUrl },
+        input_audio: { type: "audio_url", audio_url: audioUrl },
         quality: "mid",
       },
     }),
