@@ -77,11 +77,37 @@ export default function PromptForm({
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const resizeImage = useCallback(async (file: File, maxSize = 1024): Promise<File> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          const scale = maxSize / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => resolve(new File([blob!], file.name, { type: "image/jpeg" })),
+          "image/jpeg",
+          0.85
+        );
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }, []);
+
   const uploadFile = useCallback(async (file: File, type: "image" | "audio") => {
     setUploading(type);
     try {
+      const uploadedFile = type === "image" ? await resizeImage(file) : file;
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadedFile);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
