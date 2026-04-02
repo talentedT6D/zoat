@@ -29,7 +29,7 @@ export async function submitAvatar(imageUrl: string, audioUrl: string, prompt?: 
   }
 
   const submitData = await submitRes.json();
-  const requestId = submitData.request_id;
+  const requestId = submitData.id || submitData.request_id;
 
   if (!requestId) {
     throw new Error(`Higgsfield: no request_id returned. Response: ${JSON.stringify(submitData).slice(0, 300)}`);
