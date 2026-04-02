@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Preloader from "./components/Preloader";
 import PromptForm from "./components/PromptForm";
 import VideoPreview from "./components/VideoPreview";
@@ -20,8 +20,6 @@ export default function Home() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pendingRequestRef = useRef<GenerateRequest | null>(null);
 
   // Live preview state
   const [liveScript, setLiveScript] = useState("");
@@ -45,53 +43,9 @@ export default function Home() {
     try {
       localStorage.setItem("zag-history", JSON.stringify(history));
     } catch {
-      // Storage full or unavailable — silently ignore
+      // Storage full or unavailable
     }
   }, [history]);
-
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
-
-  const pollJob = useCallback((jobId: string) => {
-    pollingRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/status/${jobId}`);
-        const data = await res.json();
-
-        if (data.status === "done") {
-          setStatus("done");
-          setVideoUrl(data.videoUrl);
-          setIsGenerating(false);
-          if (pollingRef.current) clearInterval(pollingRef.current);
-          const req = pendingRequestRef.current;
-          if (req && data.videoUrl) {
-            setHistory((prev) => [
-              {
-                id: jobId,
-                timestamp: Date.now(),
-                videoUrl: data.videoUrl,
-                script: req.script,
-                voicePreset: req.voicePreset,
-                gestureMode: req.gestureMode,
-                costume: req.costume,
-              },
-              ...prev,
-            ]);
-          }
-        } else if (data.status === "failed") {
-          setStatus("failed");
-          setError(data.error || "Generation failed");
-          setIsGenerating(false);
-          if (pollingRef.current) clearInterval(pollingRef.current);
-        }
-      } catch {
-        // Continue polling on network errors
-      }
-    }, 2000);
-  }, []);
 
   const handleGenerate = useCallback(
     async (request: GenerateRequest) => {
@@ -128,20 +82,36 @@ export default function Home() {
 
         if (!data.success) {
           setStatus("failed");
-          setError(data.error || "Failed to start generation");
+          setError(data.error || "Generation failed");
           setIsGenerating(false);
           return;
         }
 
-        pendingRequestRef.current = request;
-        pollJob(data.jobId);
+        // Synchronous response — video URL returned directly
+        setStatus("done");
+        setVideoUrl(data.videoUrl);
+        setIsGenerating(false);
+
+        // Add to history
+        setHistory((prev) => [
+          {
+            id: `${Date.now()}`,
+            timestamp: Date.now(),
+            videoUrl: data.videoUrl,
+            script: request.script,
+            voicePreset: request.voicePreset,
+            gestureMode: request.gestureMode,
+            costume: request.costume,
+          },
+          ...prev,
+        ]);
       } catch (err) {
         setStatus("failed");
         setError(err instanceof Error ? err.message : "Network error");
         setIsGenerating(false);
       }
     },
-    [pollJob]
+    []
   );
 
   const handleHistorySelect = useCallback((entry: HistoryEntry) => {
