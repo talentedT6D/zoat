@@ -3,7 +3,8 @@ import type { GenerateRequest } from "@/types";
 import { compilePrompt, getAnimationConfig } from "@/lib/promptCompiler";
 import { generateVoice } from "@/lib/eleven";
 import { generateAvatar } from "@/lib/klingAvatar";
-import { createJob, updateJob, generateJobId } from "@/lib/jobStore";
+
+export const maxDuration = 300; // Allow up to 5 minutes for Vercel
 
 export async function POST(req: Request) {
   try {
@@ -41,15 +42,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const jobId = generateJobId();
-    createJob(jobId);
+    // Run the full pipeline synchronously
+    const videoUrl = await runPipeline(body);
 
-    runPipeline(jobId, body).catch((err) => {
-      console.error(`Job ${jobId} failed:`, err);
-      updateJob(jobId, { status: "failed", error: err.message });
-    });
-
-    return NextResponse.json({ success: true, jobId });
+    return NextResponse.json({ success: true, videoUrl });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
@@ -62,7 +58,7 @@ export async function POST(req: Request) {
   }
 }
 
-async function runPipeline(jobId: string, params: GenerateRequest) {
+async function runPipeline(params: GenerateRequest): Promise<string> {
   const {
     script,
     gestureMode,
@@ -77,7 +73,7 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
     customPrompts,
   } = params;
 
-  // 1. Compile prompt (with optional custom overrides)
+  // 1. Compile prompt
   const prompt = compilePrompt({
     script: script || "",
     gestureMode,
@@ -97,7 +93,7 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
     audioUrl = await generateVoice(script, voicePreset, voiceTuning);
   }
 
-  // 3. Generate avatar — user-uploaded base image
+  // 3. Generate avatar video
   const animation = getAnimationConfig(gestureMode, bodyMovement || { neck: 3, hands: 3, body: 2 });
 
   const videoUrl = await generateAvatar({
@@ -107,6 +103,5 @@ async function runPipeline(jobId: string, params: GenerateRequest) {
     animation,
   });
 
-  // 4. Update job with result
-  updateJob(jobId, { status: "done", videoUrl });
+  return videoUrl;
 }
