@@ -17,8 +17,9 @@ async function resizeAndUpload(imageUrl: string): Promise<string> {
     .jpeg({ quality: 80 })
     .toBuffer();
 
-  const blob = new Blob([resized], { type: "image/jpeg" });
-  const file = new File([blob], "image.jpg", { type: "image/jpeg" });
+  // Convert Node Buffer to ArrayBuffer for File/Blob compatibility
+  const ab = resized.buffer.slice(resized.byteOffset, resized.byteOffset + resized.byteLength) as ArrayBuffer;
+  const file = new File([ab], "image.jpg", { type: "image/jpeg" });
   return await fal.storage.upload(file);
 }
 
