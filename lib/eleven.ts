@@ -1,7 +1,7 @@
 import type { VoicePreset, VoiceTuning } from "@/types";
 
 const ELEVENLABS_VOICE_ID = "NGd6cAY3u3AiZhUL0IyV";
-const ELEVENLABS_API_URL = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=pcm_22050`;
+const ELEVENLABS_API_URL = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`;
 
 // Map ZAG voice presets → ElevenLabs style parameters
 const PRESET_CONFIG: Record<
@@ -41,7 +41,7 @@ export async function generateVoice(
     },
     body: JSON.stringify({
       text: script,
-      model_id: "eleven_turbo_v2_5",
+      model_id: "eleven_multilingual_v2",
       voice_settings: {
         stability,
         similarity_boost,
@@ -63,61 +63,13 @@ export async function generateVoice(
     throw new Error(`ElevenLabs API error (${res.status}): ${message} ${keyHint}`);
   }
 
-  // ElevenLabs returns raw PCM — wrap in WAV header for Higgsfield
+  // ElevenLabs returns raw audio bytes — upload to fal storage for the avatar pipeline
   const { fal } = await import("@fal-ai/client");
   fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
 
-  const pcmBuffer = await res.arrayBuffer();
-  const wavBuffer = wrapPcmAsWav(pcmBuffer, 22050, 1, 16);
-  const audioFile = new File([wavBuffer], "voice.wav", { type: "audio/wav" });
+  const audioBuffer = await res.arrayBuffer();
+  const audioFile = new File([audioBuffer], "voice.mp3", { type: "audio/mpeg" });
   const uploadedUrl = await fal.storage.upload(audioFile);
 
   return uploadedUrl;
-}
-
-/**
- * Wrap raw PCM data in a WAV header
- */
-function wrapPcmAsWav(
-  pcmData: ArrayBuffer,
-  sampleRate: number,
-  numChannels: number,
-  bitsPerSample: number
-): ArrayBuffer {
-  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-  const blockAlign = numChannels * (bitsPerSample / 8);
-  const dataSize = pcmData.byteLength;
-  const headerSize = 44;
-  const buffer = new ArrayBuffer(headerSize + dataSize);
-  const view = new DataView(buffer);
-
-  // RIFF header
-  writeString(view, 0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(view, 8, "WAVE");
-
-  // fmt chunk
-  writeString(view, 12, "fmt ");
-  view.setUint32(16, 16, true); // chunk size
-  view.setUint16(20, 1, true); // PCM format
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-
-  // data chunk
-  writeString(view, 36, "data");
-  view.setUint32(40, dataSize, true);
-
-  // Copy PCM data
-  new Uint8Array(buffer, headerSize).set(new Uint8Array(pcmData));
-
-  return buffer;
-}
-
-function writeString(view: DataView, offset: number, str: string) {
-  for (let i = 0; i < str.length; i++) {
-    view.setUint8(offset + i, str.charCodeAt(i));
-  }
 }

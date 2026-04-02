@@ -1,75 +1,45 @@
-const HIGGSFIELD_KEY = "30d30b7f-2099-4276-940e-e367bec12ac9:743f29c61d87a0936891621382aebf83974395a198b038b129900a725851db44";
-const HIGGSFIELD_BASE = "https://platform.higgsfield.ai";
+import { fal } from "@fal-ai/client";
+import type { AnimationConfig } from "@/types";
 
-/**
- * Submit a talking avatar job to Higgsfield Cloud API
- * Endpoint: /v1/speak/higgsfield (from official SDK)
- * Returns the request ID for polling
- */
-export async function submitAvatar(imageUrl: string, audioUrl: string, prompt?: string): Promise<string> {
-  const submitRes = await fetch(`${HIGGSFIELD_BASE}/v1/speak/higgsfield`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Key ${HIGGSFIELD_KEY}`,
-    },
-    body: JSON.stringify({
-      params: {
-        input_image: { type: "image_url", image_url: imageUrl },
-        input_audio: { type: "audio_url", audio_url: audioUrl },
-        prompt: prompt || "Natural speaking presentation, direct to camera",
-        quality: "mid",
-      },
-    }),
-  });
+// Configure fal client
+fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
 
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Error(`Higgsfield API error (${submitRes.status}): ${errText.slice(0, 300)}`);
-  }
-
-  const submitData = await submitRes.json();
-  const requestId = submitData.id || submitData.request_id;
-
-  if (!requestId) {
-    throw new Error(`Higgsfield: no request_id returned. Response: ${JSON.stringify(submitData).slice(0, 300)}`);
-  }
-
-  return requestId;
+interface AvatarParams {
+  imageUrl: string;
+  audioUrl: string;
+  prompt: string;
+  animation: AnimationConfig;
 }
 
 /**
- * Check status of a Higgsfield generation
- * Endpoint: /requests/{request_id}/status
+ * Generate talking avatar video using fal.ai Creatify Aurora
+ * Takes ZAG base image + audio → returns MP4 video URL
  */
-export async function checkAvatarStatus(requestId: string): Promise<{
-  status: "processing" | "done" | "failed";
-  videoUrl?: string;
-  error?: string;
-}> {
-  const res = await fetch(`${HIGGSFIELD_BASE}/requests/${requestId}/status`, {
-    headers: {
-      "Authorization": `Key ${HIGGSFIELD_KEY}`,
+export async function generateAvatar(params: AvatarParams): Promise<string> {
+  const { imageUrl, audioUrl, prompt } = params;
+
+  // Scale guidance based on how much movement is requested
+  // More movement description → higher guidance to follow the prompt
+  const guidanceScale = prompt.length > 800 ? 1.5 : 1;
+
+  const result = await fal.subscribe("fal-ai/creatify/aurora", {
+    input: {
+      image_url: imageUrl,
+      audio_url: audioUrl,
+      prompt: buildAuroraPrompt(prompt),
+      guidance_scale: guidanceScale,
+      audio_guidance_scale: 2,
+      resolution: "720p",
     },
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Higgsfield status error (${res.status}): ${errText.slice(0, 300)}`);
-  }
+  const data = result.data as { video: { url: string } };
+  return data.video.url;
+}
 
-  const data = await res.json();
-  const status = data.status;
-
-  if (status === "completed") {
-    const videoUrl = data.video?.url || data.output_url || data.media_urls?.[0];
-    return { status: "done", videoUrl };
-  }
-
-  if (status === "failed" || status === "nsfw" || status === "canceled") {
-    return { status: "failed", error: data.error || `Generation ${status}` };
-  }
-
-  // queued / in_progress
-  return { status: "processing" };
+/**
+ * Condense the full compiled prompt into Aurora-optimized guidance
+ */
+function buildAuroraPrompt(compiledPrompt: string): string {
+  return `9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera. ${compiledPrompt.slice(0, 700)}`;
 }

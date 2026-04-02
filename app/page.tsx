@@ -14,44 +14,6 @@ import type {
 } from "@/types";
 import { compilePrompt } from "@/lib/promptCompiler";
 
-/**
- * Resize an image URL to max 768px via canvas, upload the result
- */
-async function resizeImageForVideo(imageUrl: string): Promise<string> {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = reject;
-    img.src = imageUrl;
-  });
-
-  const maxSize = 768;
-  let { width, height } = img;
-  if (width > maxSize || height > maxSize) {
-    const scale = maxSize / Math.max(width, height);
-    width = Math.round(width * scale);
-    height = Math.round(height * scale);
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(img, 0, 0, width, height);
-
-  const blob = await new Promise<Blob>((resolve) =>
-    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.8)
-  );
-
-  const formData = new FormData();
-  formData.append("file", new File([blob], "image.jpg", { type: "image/jpeg" }));
-  const res = await fetch("/api/upload", { method: "POST", body: formData });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.url;
-}
-
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<"idle" | JobStatus>("idle");
@@ -83,7 +45,7 @@ export default function Home() {
     try {
       localStorage.setItem("zag-history", JSON.stringify(history));
     } catch {
-      // Storage full or unavailable
+      // Storage full or unavailable — silently ignore
     }
   }, [history]);
 
@@ -93,23 +55,22 @@ export default function Home() {
     };
   }, []);
 
-  const pollVideo = useCallback((generationId: string) => {
+  const pollJob = useCallback((jobId: string) => {
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`/api/video-status/${generationId}`);
+        const res = await fetch(`/api/status/${jobId}`);
         const data = await res.json();
 
-        if (data.status === "done" && data.videoUrl) {
+        if (data.status === "done") {
           setStatus("done");
           setVideoUrl(data.videoUrl);
           setIsGenerating(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
-
           const req = pendingRequestRef.current;
-          if (req) {
+          if (req && data.videoUrl) {
             setHistory((prev) => [
               {
-                id: generationId,
+                id: jobId,
                 timestamp: Date.now(),
                 videoUrl: data.videoUrl,
                 script: req.script,
@@ -122,14 +83,14 @@ export default function Home() {
           }
         } else if (data.status === "failed") {
           setStatus("failed");
-          setError(data.error || "Video generation failed");
+          setError(data.error || "Generation failed");
           setIsGenerating(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
         }
       } catch {
         // Continue polling on network errors
       }
-    }, 3000);
+    }, 2000);
   }, []);
 
   const handleGenerate = useCallback(
@@ -157,55 +118,30 @@ export default function Home() {
       setCompiledPrompt(prompt);
 
       try {
-        // Step 1: Generate TTS audio
-        const ttsRes = await fetch("/api/generate", {
+        const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(request),
         });
 
-        const ttsData = await ttsRes.json();
+        const data = await res.json();
 
-        if (!ttsData.success) {
+        if (!data.success) {
           setStatus("failed");
-          setError(ttsData.error || "TTS generation failed");
+          setError(data.error || "Failed to start generation");
           setIsGenerating(false);
           return;
         }
 
-        // Step 2: Resize image for Higgsfield
-        const smallImageUrl = await resizeImageForVideo(request.baseImageUrl);
-
-        // Step 3: Submit video generation
-        const videoRes = await fetch("/api/submit-video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageUrl: smallImageUrl,
-            audioUrl: ttsData.audioUrl,
-            prompt: request.script,
-          }),
-        });
-
-        const videoData = await videoRes.json();
-
-        if (!videoData.success) {
-          setStatus("failed");
-          setError(videoData.error || "Video submission failed");
-          setIsGenerating(false);
-          return;
-        }
-
-        // Step 3: Poll for video completion
         pendingRequestRef.current = request;
-        pollVideo(videoData.generationId);
+        pollJob(data.jobId);
       } catch (err) {
         setStatus("failed");
         setError(err instanceof Error ? err.message : "Network error");
         setIsGenerating(false);
       }
     },
-    [pollVideo]
+    [pollJob]
   );
 
   const handleHistorySelect = useCallback((entry: HistoryEntry) => {
