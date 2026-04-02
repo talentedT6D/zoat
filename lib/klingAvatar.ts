@@ -14,9 +14,11 @@ export async function submitAvatar(imageUrl: string, audioUrl: string): Promise<
       "Authorization": `Key ${HIGGSFIELD_KEY}`,
     },
     body: JSON.stringify({
-      input_image: imageUrl,
-      input_audio: audioUrl,
-      quality: "mid",
+      params: {
+        input_image: imageUrl,
+        input_audio: audioUrl,
+        quality: "mid",
+      },
     }),
   });
 
