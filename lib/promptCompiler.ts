@@ -8,6 +8,9 @@ import type {
   AnimationConfig,
   CustomPrompts,
 } from "@/types";
+import type { AnnotationCategory } from "@/lib/annotationRegistry";
+import type { ParsedCue } from "@/lib/scriptAnnotations";
+import { buildAllDirections } from "@/lib/scriptAnnotations";
 
 // === Costume Visual Rules ===
 const COSTUME_RULES: Record<CostumeVariant, string> = {
@@ -174,7 +177,11 @@ export function compilePrompt(params: {
   voicePreset: VoicePreset;
   voiceTuning: VoiceTuning;
   customPrompts?: CustomPrompts;
-  annotationDirections?: { gestures: string; tone: string };
+  annotationDirections?: {
+    gestures: string;
+    tone: string;
+    cuesByCategory?: Partial<Record<AnnotationCategory, ParsedCue[]>>;
+  };
 }): string {
   const { script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, customPrompts, annotationDirections } =
     params;
@@ -199,11 +206,14 @@ export function compilePrompt(params: {
   const bodyMovementBlock = compileBodyMovementBlock(bodyMovement);
 
   // Build inline cues block from annotations (if any)
-  const inlineCues = [
-    annotationDirections?.gestures,
-    annotationDirections?.tone,
-  ].filter(Boolean).join(" ");
-  const inlineCuesBlock = inlineCues ? `Inline Cues:\n  - ${inlineCues.slice(0, 150)}` : "";
+  // Prefer rich per-category directions; fall back to legacy gesture/tone strings
+  let inlineCuesBlock = "";
+  if (annotationDirections?.cuesByCategory && Object.keys(annotationDirections.cuesByCategory).length > 0) {
+    inlineCuesBlock = buildAllDirections(annotationDirections.cuesByCategory);
+  } else {
+    const legacy = [annotationDirections?.gestures, annotationDirections?.tone].filter(Boolean).join(" ");
+    inlineCuesBlock = legacy ? `Inline Cues:\n  - ${legacy.slice(0, 200)}` : "";
+  }
 
   const blocks = [
     `Character: ZAG (crocodile mascot)`,

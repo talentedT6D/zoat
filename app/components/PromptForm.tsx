@@ -14,6 +14,7 @@ import type {
   CustomPrompts,
 } from "@/types";
 import { stripAllAnnotations } from "@/lib/scriptAnnotations";
+import { REGISTRY_BY_CATEGORY, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
   { id: "default", label: "Default" },
@@ -102,6 +103,7 @@ export default function PromptForm({
 
   const cleanLength = stripAllAnnotations(script).length;
   const hasAnnotations = cleanLength !== script.length;
+  const [toolbarOpen, setToolbarOpen] = useState(true);
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -226,20 +228,34 @@ export default function PromptForm({
 
           {voiceMode === "tts" && (
             <div className="mt-3 animate-fade-in">
-              {/* Annotation toolbar */}
-              <div className="flex items-center gap-1 mb-2 flex-wrap">
-                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mr-1">Audio+Video</span>
-                <AnnotationBtn label="Pause" onClick={() => insertAnnotation("pause", false)} />
-                <AnnotationBtn label="Long Pause" onClick={() => insertAnnotation("long pause", false)} />
-                <AnnotationBtn label="LOUD" onClick={() => insertAnnotation("loud", true)} />
-                <span className="w-px h-4 bg-[#9b51e0]/10 mx-1" />
-                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mr-1">Video Hints</span>
-                <AnnotationBtn label="Wave" onClick={() => insertAnnotation("wave", false)} />
-                <AnnotationBtn label="Point" onClick={() => insertAnnotation("point", false)} />
-                <AnnotationBtn label="Nod" onClick={() => insertAnnotation("nod", false)} />
-                <AnnotationBtn label="Shrug" onClick={() => insertAnnotation("shrug", false)} />
-                <AnnotationBtn label="Whisper" onClick={() => insertAnnotation("whisper", true)} />
-                <AnnotationBtn label="Slow" onClick={() => insertAnnotation("slow", true)} />
+              {/* Annotation toolbar — data-driven from registry */}
+              <div className="mb-2">
+                <button type="button" onClick={() => setToolbarOpen((p) => !p)}
+                  className="flex items-center gap-1.5 text-[10px] text-[#f5f0ff]/25 hover:text-[#b87df5] transition-colors cursor-pointer mb-1.5">
+                  <svg className={`w-3 h-3 transition-transform ${toolbarOpen ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                  <span>Annotations</span>
+                  <span className="text-[#f5f0ff]/10">({TOOLBAR_CATEGORIES.length} categories)</span>
+                </button>
+                {toolbarOpen && (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+                    {TOOLBAR_CATEGORIES.map(({ category, label }) => {
+                      const defs = REGISTRY_BY_CATEGORY.get(category) ?? [];
+                      if (defs.length === 0) return null;
+                      return (
+                        <div key={category} className="flex items-center gap-1 flex-wrap">
+                          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider w-14 shrink-0">{label}</span>
+                          {defs.map((def) => (
+                            <AnnotationBtn key={def.tag} label={def.label}
+                              onClick={() => insertAnnotation(def.tag, def.type === "wrapper")} />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 2000))}
                 placeholder="Type your script... Use toolbar to add pauses, gestures, and voice cues"

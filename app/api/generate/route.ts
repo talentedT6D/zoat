@@ -84,6 +84,7 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     annotationDirections: {
       gestures: parsed.gestureDirections,
       tone: parsed.toneDirections,
+      cuesByCategory: parsed.cuesByCategory,
     },
   });
 

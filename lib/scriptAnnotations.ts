@@ -1,105 +1,169 @@
+import {
+  REGISTRY,
+  ALL_WRAPPER_TAGS,
+  ALL_SELF_CLOSING_TAGS,
+  escapeRegex,
+  type AnnotationDef,
+  type AnnotationCategory,
+} from "./annotationRegistry";
+
+export interface ParsedCue {
+  def: AnnotationDef;
+  position?: "early" | "midway" | "late";
+  text?: string; // for wrapper tags
+}
+
 export interface ParsedScript {
   ttsText: string;
   gestureDirections: string;
   toneDirections: string;
   cleanScript: string;
+  cuesByCategory: Partial<Record<AnnotationCategory, ParsedCue[]>>;
 }
-
-const GESTURE_TAGS = ["wave", "point", "nod", "shrug"] as const;
-const WRAPPER_TAGS = ["loud", "whisper", "slow"] as const;
-const PAUSE_TAGS = ["pause", "long pause"] as const;
-
-type GestureTag = (typeof GESTURE_TAGS)[number];
-type WrapperTag = (typeof WRAPPER_TAGS)[number];
 
 /**
  * Parse inline annotations from a raw script.
- * Returns cleaned text for TTS, gesture cues for Aurora, and tone cues for Aurora.
+ * Data-driven from the annotation registry — supports any registered tag.
  */
 export function parseAnnotations(rawScript: string): ParsedScript {
   let ttsText = rawScript;
-  const gestures: { tag: GestureTag; position: "early" | "midway" | "late" }[] = [];
-  const tones: { tag: WrapperTag; text: string }[] = [];
+  const cues: ParsedCue[] = [];
 
-  // 1. Extract wrapper tags [loud]...[/loud], [whisper]...[/whisper], [slow]...[/slow]
-  for (const tag of WRAPPER_TAGS) {
-    const regex = new RegExp(`\\[${tag}\\](.*?)\\[\\/${tag}\\]`, "gi");
+  // 1. Process wrapper tags first (e.g. [loud]text[/loud])
+  const wrappers = REGISTRY.filter((d) => d.type === "wrapper");
+  for (const def of wrappers) {
+    const esc = escapeRegex(def.tag);
+    const regex = new RegExp(`\\[${esc}\\](.*?)\\[\\/${esc}\\]`, "gi");
     ttsText = ttsText.replace(regex, (_match, content: string) => {
-      tones.push({ tag: tag as WrapperTag, text: content.trim() });
-      if (tag === "loud") {
-        return content.toUpperCase();
+      cues.push({ def, text: content.trim() });
+      switch (def.ttsEffect) {
+        case "uppercase":
+          return content.toUpperCase();
+        case "passthrough":
+          return content;
+        default:
+          return content;
       }
-      // whisper and slow: just return text as-is for TTS (no audio effect)
-      return content;
     });
   }
 
-  // 2. Extract gesture tags [wave], [point], [nod], [shrug]
-  for (const tag of GESTURE_TAGS) {
-    const regex = new RegExp(`\\[${tag}\\]`, "gi");
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(ttsText)) !== null) {
-      const relativePos = match.index / ttsText.length;
-      const position = relativePos < 0.33 ? "early" : relativePos < 0.66 ? "midway" : "late";
-      gestures.push({ tag: tag as GestureTag, position });
+  // 2. Process self-closing tags (gestures, emotions, camera, effects, pauses, timing)
+  const selfClosing = REGISTRY.filter((d) => d.type === "self-closing");
+  for (const def of selfClosing) {
+    const esc = escapeRegex(def.tag);
+    const regex = new RegExp(`\\[${esc}\\]`, "gi");
+
+    // Collect position-aware cues before stripping
+    if (def.positionAware) {
+      let match: RegExpExecArray | null;
+      const findRegex = new RegExp(`\\[${esc}\\]`, "gi");
+      while ((match = findRegex.exec(ttsText)) !== null) {
+        const rel = ttsText.length > 0 ? match.index / ttsText.length : 0;
+        const position = rel < 0.33 ? "early" : rel < 0.66 ? "midway" : "late";
+        cues.push({ def, position });
+      }
+    } else {
+      // Non-position-aware self-closing (pauses, timing)
+      const findRegex = new RegExp(`\\[${esc}\\]`, "gi");
+      while (findRegex.exec(ttsText) !== null) {
+        cues.push({ def });
+      }
     }
-    ttsText = ttsText.replace(regex, "");
+
+    // Apply TTS effect then strip
+    switch (def.ttsEffect) {
+      case "ellipsis":
+        ttsText = ttsText.replace(regex, "...");
+        break;
+      case "long-ellipsis":
+        ttsText = ttsText.replace(regex, ". ...");
+        break;
+      default:
+        // "none" — just strip
+        ttsText = ttsText.replace(regex, "");
+        break;
+    }
   }
 
-  // 3. Convert pause tags to natural punctuation
-  ttsText = ttsText.replace(/\[long\s+pause\]/gi, ". ...");
-  ttsText = ttsText.replace(/\[pause\]/gi, "...");
-
-  // 4. Clean up extra whitespace
+  // 3. Clean up whitespace
   ttsText = ttsText.replace(/\s{2,}/g, " ").trim();
 
-  // 5. Build gesture directions string for Aurora prompt
-  const gestureDirections = buildGestureDirections(gestures);
+  // 4. Group cues by category
+  const cuesByCategory: Partial<Record<AnnotationCategory, ParsedCue[]>> = {};
+  for (const cue of cues) {
+    const cat = cue.def.category;
+    (cuesByCategory[cat] ??= []).push(cue);
+  }
 
-  // 6. Build tone directions string for Aurora prompt
-  const toneDirections = buildToneDirections(tones);
+  // 5. Build legacy direction strings (backward compat)
+  const gestureDirections = buildCategoryDirections(cuesByCategory["gesture"]);
+  const toneDirections = buildWrapperDirections(cuesByCategory["voice"]);
 
-  // 7. Clean script (all annotations stripped, for display/char counting)
+  // 6. Clean script for display/char counting
   const cleanScript = stripAllAnnotations(rawScript);
 
-  return { ttsText, gestureDirections, toneDirections, cleanScript };
+  return { ttsText, gestureDirections, toneDirections, cleanScript, cuesByCategory };
 }
 
-function buildGestureDirections(
-  gestures: { tag: GestureTag; position: string }[]
-): string {
-  if (gestures.length === 0) return "";
-
-  const GESTURE_DESC: Record<GestureTag, string> = {
-    wave: "waves hand",
-    point: "points at camera",
-    nod: "nods head",
-    shrug: "shrugs shoulders",
-  };
-
-  const parts = gestures.map(
-    (g) => `${GESTURE_DESC[g.tag]} ${g.position} in speech`
+function buildCategoryDirections(cues?: ParsedCue[]): string {
+  if (!cues || cues.length === 0) return "";
+  const parts = cues.map(
+    (c) => `${c.def.promptEffect}${c.position ? ` ${c.position} in speech` : ""}`
   );
-
   return `Gestures: ${parts.join(", ")}.`;
 }
 
-function buildToneDirections(
-  tones: { tag: WrapperTag; text: string }[]
-): string {
-  if (tones.length === 0) return "";
+function buildWrapperDirections(cues?: ParsedCue[]): string {
+  if (!cues || cues.length === 0) return "";
+  const parts = cues.map(
+    (c) => `${c.def.promptEffect} for "${(c.text ?? "").slice(0, 30)}"`
+  );
+  return `Delivery: ${parts.join("; ")}.`;
+}
 
-  const TONE_DESC: Record<WrapperTag, string> = {
-    loud: "delivers with intensity",
-    whisper: "hushed intimate delivery",
-    slow: "slows pace deliberately",
+/**
+ * Build a multi-line directions block from all annotation categories.
+ * Used by the prompt compiler for richer video model guidance.
+ */
+export function buildAllDirections(
+  cuesByCategory: Partial<Record<AnnotationCategory, ParsedCue[]>>
+): string {
+  const CATEGORY_LABELS: Record<AnnotationCategory, string> = {
+    pause: "Pauses",
+    timing: "Timing",
+    voice: "Delivery",
+    gesture: "Gestures",
+    emotion: "Emotion",
+    expression: "Expression",
+    camera: "Camera",
+    effect: "Effects",
   };
 
-  const parts = tones.map(
-    (t) => `${TONE_DESC[t.tag]} for "${t.text.slice(0, 30)}"`
-  );
+  const lines: string[] = [];
 
-  return `Delivery: ${parts.join("; ")}.`;
+  for (const [cat, label] of Object.entries(CATEGORY_LABELS) as [AnnotationCategory, string][]) {
+    const cues = cuesByCategory[cat];
+    if (!cues || cues.length === 0) continue;
+
+    let line: string;
+    if (cat === "voice") {
+      // Wrapper tags: show what text they wrap
+      const parts = cues.map(
+        (c) => `${c.def.promptEffect} for "${(c.text ?? "").slice(0, 30)}"`
+      );
+      line = `${label}: ${parts.join("; ")}`;
+    } else {
+      // Self-closing tags: show position if available
+      const parts = cues.map(
+        (c) => `${c.def.promptEffect}${c.position ? ` ${c.position} in speech` : ""}`
+      );
+      line = `${label}: ${parts.join(", ")}`;
+    }
+
+    lines.push(`  - ${line.slice(0, 200)}`);
+  }
+
+  return lines.length > 0 ? `Inline Cues:\n${lines.join("\n")}` : "";
 }
 
 /**
@@ -107,17 +171,15 @@ function buildToneDirections(
  */
 export function stripAllAnnotations(script: string): string {
   let clean = script;
-  // Remove wrapper tags
-  for (const tag of WRAPPER_TAGS) {
-    clean = clean.replace(new RegExp(`\\[\\/?${tag}\\]`, "gi"), "");
+  // Remove wrapper tags (open and close)
+  for (const tag of ALL_WRAPPER_TAGS) {
+    const esc = escapeRegex(tag);
+    clean = clean.replace(new RegExp(`\\[\\/?${esc}\\]`, "gi"), "");
   }
-  // Remove gesture tags
-  for (const tag of GESTURE_TAGS) {
-    clean = clean.replace(new RegExp(`\\[${tag}\\]`, "gi"), "");
+  // Remove self-closing tags
+  for (const tag of ALL_SELF_CLOSING_TAGS) {
+    const esc = escapeRegex(tag);
+    clean = clean.replace(new RegExp(`\\[${esc}\\]`, "gi"), "");
   }
-  // Remove pause tags
-  clean = clean.replace(/\[long\s+pause\]/gi, "");
-  clean = clean.replace(/\[pause\]/gi, "");
-  // Clean whitespace
   return clean.replace(/\s{2,}/g, " ").trim();
 }
