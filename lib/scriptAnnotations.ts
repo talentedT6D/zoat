@@ -2,6 +2,7 @@ import {
   REGISTRY,
   ALL_WRAPPER_TAGS,
   ALL_SELF_CLOSING_TAGS,
+  DURATION_PATTERN,
   escapeRegex,
   type AnnotationDef,
   type AnnotationCategory,
@@ -10,7 +11,8 @@ import {
 export interface ParsedCue {
   def: AnnotationDef;
   position?: "early" | "midway" | "late";
-  text?: string; // for wrapper tags
+  text?: string;      // for wrapper tags
+  duration?: number;   // seconds, from :Ns suffix
 }
 
 export interface ParsedScript {
@@ -24,18 +26,21 @@ export interface ParsedScript {
 /**
  * Parse inline annotations from a raw script.
  * Data-driven from the annotation registry — supports any registered tag.
+ * Supports optional duration syntax: [tag:2s], [tag:1.5s]
  */
 export function parseAnnotations(rawScript: string): ParsedScript {
   let ttsText = rawScript;
   const cues: ParsedCue[] = [];
 
-  // 1. Process wrapper tags first (e.g. [loud]text[/loud])
+  // 1. Process wrapper tags first (e.g. [loud]text[/loud] or [loud:2s]text[/loud])
   const wrappers = REGISTRY.filter((d) => d.type === "wrapper");
   for (const def of wrappers) {
     const esc = escapeRegex(def.tag);
-    const regex = new RegExp(`\\[${esc}\\](.*?)\\[\\/${esc}\\]`, "gi");
-    ttsText = ttsText.replace(regex, (_match, content: string) => {
-      cues.push({ def, text: content.trim() });
+    // Match [tag] or [tag:Ns] ... [/tag]
+    const regex = new RegExp(`\\[${esc}${DURATION_PATTERN}\\](.*?)\\[\\/${esc}\\]`, "gi");
+    ttsText = ttsText.replace(regex, (_match, durStr: string | undefined, content: string) => {
+      const duration = durStr ? parseFloat(durStr) : undefined;
+      cues.push({ def, text: content.trim(), duration });
       switch (def.ttsEffect) {
         case "uppercase":
           return content.toUpperCase();
@@ -51,22 +56,21 @@ export function parseAnnotations(rawScript: string): ParsedScript {
   const selfClosing = REGISTRY.filter((d) => d.type === "self-closing");
   for (const def of selfClosing) {
     const esc = escapeRegex(def.tag);
-    const regex = new RegExp(`\\[${esc}\\]`, "gi");
+    // Match [tag] or [tag:Ns]
+    const patternStr = `\\[${esc}${DURATION_PATTERN}\\]`;
+    const regex = new RegExp(patternStr, "gi");
 
-    // Collect position-aware cues before stripping
-    if (def.positionAware) {
-      let match: RegExpExecArray | null;
-      const findRegex = new RegExp(`\\[${esc}\\]`, "gi");
-      while ((match = findRegex.exec(ttsText)) !== null) {
+    // Collect cues before stripping
+    const findRegex = new RegExp(patternStr, "gi");
+    let match: RegExpExecArray | null;
+    while ((match = findRegex.exec(ttsText)) !== null) {
+      const duration = match[1] ? parseFloat(match[1]) : undefined;
+      if (def.positionAware) {
         const rel = ttsText.length > 0 ? match.index / ttsText.length : 0;
         const position = rel < 0.33 ? "early" : rel < 0.66 ? "midway" : "late";
-        cues.push({ def, position });
-      }
-    } else {
-      // Non-position-aware self-closing (pauses, timing)
-      const findRegex = new RegExp(`\\[${esc}\\]`, "gi");
-      while (findRegex.exec(ttsText) !== null) {
-        cues.push({ def });
+        cues.push({ def, position, duration });
+      } else {
+        cues.push({ def, duration });
       }
     }
 
@@ -79,7 +83,6 @@ export function parseAnnotations(rawScript: string): ParsedScript {
         ttsText = ttsText.replace(regex, ". ...");
         break;
       default:
-        // "none" — just strip
         ttsText = ttsText.replace(regex, "");
         break;
     }
@@ -105,10 +108,15 @@ export function parseAnnotations(rawScript: string): ParsedScript {
   return { ttsText, gestureDirections, toneDirections, cleanScript, cuesByCategory };
 }
 
+function formatDuration(dur?: number): string {
+  if (dur == null) return "";
+  return ` for ${dur}s`;
+}
+
 function buildCategoryDirections(cues?: ParsedCue[]): string {
   if (!cues || cues.length === 0) return "";
   const parts = cues.map(
-    (c) => `${c.def.promptEffect}${c.position ? ` ${c.position} in speech` : ""}`
+    (c) => `${c.def.promptEffect}${formatDuration(c.duration)}${c.position ? ` ${c.position} in speech` : ""}`
   );
   return `Gestures: ${parts.join(", ")}.`;
 }
@@ -116,7 +124,7 @@ function buildCategoryDirections(cues?: ParsedCue[]): string {
 function buildWrapperDirections(cues?: ParsedCue[]): string {
   if (!cues || cues.length === 0) return "";
   const parts = cues.map(
-    (c) => `${c.def.promptEffect} for "${(c.text ?? "").slice(0, 30)}"`
+    (c) => `${c.def.promptEffect}${formatDuration(c.duration)} for "${(c.text ?? "").slice(0, 30)}"`
   );
   return `Delivery: ${parts.join("; ")}.`;
 }
@@ -135,8 +143,11 @@ export function buildAllDirections(
     gesture: "Gestures",
     emotion: "Emotion",
     expression: "Expression",
+    gaze: "Eye Direction",
+    movement: "Body Movement",
     camera: "Camera",
     effect: "Effects",
+    transition: "Transitions",
   };
 
   const lines: string[] = [];
@@ -147,39 +158,42 @@ export function buildAllDirections(
 
     let line: string;
     if (cat === "voice") {
-      // Wrapper tags: show what text they wrap
       const parts = cues.map(
-        (c) => `${c.def.promptEffect} for "${(c.text ?? "").slice(0, 30)}"`
+        (c) => `${c.def.promptEffect}${formatDuration(c.duration)} for "${(c.text ?? "").slice(0, 30)}"`
       );
       line = `${label}: ${parts.join("; ")}`;
     } else {
-      // Self-closing tags: show position if available
-      const parts = cues.map(
-        (c) => `${c.def.promptEffect}${c.position ? ` ${c.position} in speech` : ""}`
-      );
+      const parts = cues.map((c) => {
+        let s = c.def.promptEffect;
+        if (c.duration != null) s += ` for ${c.duration}s`;
+        if (c.position) s += ` ${c.position} in speech`;
+        return s;
+      });
       line = `${label}: ${parts.join(", ")}`;
     }
 
-    lines.push(`  - ${line.slice(0, 200)}`);
+    lines.push(`  - ${line.slice(0, 250)}`);
   }
 
   return lines.length > 0 ? `Inline Cues:\n${lines.join("\n")}` : "";
 }
 
 /**
- * Strip all annotation tags from script (for display/char counting)
+ * Strip all annotation tags from script (for display/char counting).
+ * Handles optional :Ns duration suffix.
  */
 export function stripAllAnnotations(script: string): string {
   let clean = script;
-  // Remove wrapper tags (open and close)
+  // Remove wrapper tags (open with optional duration, and close)
   for (const tag of ALL_WRAPPER_TAGS) {
     const esc = escapeRegex(tag);
-    clean = clean.replace(new RegExp(`\\[\\/?${esc}\\]`, "gi"), "");
+    clean = clean.replace(new RegExp(`\\[${esc}${DURATION_PATTERN}\\]`, "gi"), "");
+    clean = clean.replace(new RegExp(`\\[\\/${esc}\\]`, "gi"), "");
   }
-  // Remove self-closing tags
+  // Remove self-closing tags with optional duration
   for (const tag of ALL_SELF_CLOSING_TAGS) {
     const esc = escapeRegex(tag);
-    clean = clean.replace(new RegExp(`\\[${esc}\\]`, "gi"), "");
+    clean = clean.replace(new RegExp(`\\[${esc}${DURATION_PATTERN}\\]`, "gi"), "");
   }
   return clean.replace(/\s{2,}/g, " ").trim();
 }

@@ -14,7 +14,7 @@ import type {
   CustomPrompts,
 } from "@/types";
 import { stripAllAnnotations } from "@/lib/scriptAnnotations";
-import { REGISTRY_BY_CATEGORY, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
+import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
   { id: "default", label: "Default" },
@@ -85,17 +85,23 @@ export default function PromptForm({
     const end = ta.selectionEnd;
     const selected = script.slice(start, end);
 
+    // Build tag string with optional default duration
+    const def = REGISTRY_BY_TAG.get(tag.toLowerCase());
+    const durSuffix = def?.durationAllowed && def.defaultDuration ? `:${def.defaultDuration}s` : "";
+    const openTag = `[${tag}${durSuffix}]`;
+    const closeTag = `[/${tag}]`;
+
     let newText: string;
     let cursorPos: number;
     if (isWrapper && selected) {
-      newText = script.slice(0, start) + `[${tag}]${selected}[/${tag}]` + script.slice(end);
-      cursorPos = end + tag.length * 2 + 5;
+      newText = script.slice(0, start) + openTag + selected + closeTag + script.slice(end);
+      cursorPos = start + openTag.length + selected.length + closeTag.length;
     } else if (isWrapper) {
-      newText = script.slice(0, start) + `[${tag}][/${tag}]` + script.slice(end);
-      cursorPos = start + tag.length + 2;
+      newText = script.slice(0, start) + openTag + closeTag + script.slice(end);
+      cursorPos = start + openTag.length;
     } else {
-      newText = script.slice(0, start) + `[${tag}]` + script.slice(end);
-      cursorPos = start + tag.length + 2;
+      newText = script.slice(0, start) + openTag + script.slice(end);
+      cursorPos = start + openTag.length;
     }
     setScript(newText.slice(0, 2000));
     setTimeout(() => { ta.focus(); ta.setSelectionRange(cursorPos, cursorPos); }, 0);
