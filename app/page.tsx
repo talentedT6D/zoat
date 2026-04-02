@@ -13,6 +13,7 @@ import type {
   HistoryEntry,
 } from "@/types";
 import { compilePrompt } from "@/lib/promptCompiler";
+import { stripAllAnnotations } from "@/lib/scriptAnnotations";
 
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
@@ -54,7 +55,7 @@ export default function Home() {
       setVideoUrl(null);
       setError(null);
 
-      setLiveScript(request.script);
+      setLiveScript(stripAllAnnotations(request.script));
       setLiveGesture(request.gestureMode);
       setLiveCostume(request.costume);
       setLiveVoice(request.voicePreset);

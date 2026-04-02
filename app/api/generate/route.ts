@@ -72,6 +72,11 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
   // Parse inline annotations from script
   const parsed = parseAnnotations(script || "");
 
+  // Reject if script is only annotations with no spoken text
+  if (voiceMode === "tts" && !parsed.cleanScript) {
+    throw new Error("Script must contain spoken text, not just annotations");
+  }
+
   const prompt = compilePrompt({
     script: parsed.cleanScript,
     gestureMode,

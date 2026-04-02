@@ -142,7 +142,7 @@ export default function PromptForm({
 
   const handleSubmit = () => {
     if (isGenerating || !baseImageUrl) return;
-    if (voiceMode === "tts" && !script.trim()) return;
+    if (voiceMode === "tts" && cleanLength === 0) return;
     if (voiceMode === "upload" && !uploadedAudioUrl) return;
 
     const activeCustom: CustomPrompts = {};
@@ -160,7 +160,7 @@ export default function PromptForm({
   };
 
   const canGenerate = baseImageUrl && !isGenerating &&
-    (voiceMode === "tts" ? script.trim().length > 0 : !!uploadedAudioUrl);
+    (voiceMode === "tts" ? cleanLength > 0 : !!uploadedAudioUrl);
 
   return (
     <div className="w-[420px] min-w-[420px] h-full overflow-y-auto bg-[#0a0814] border-r border-[#9b51e0]/[0.06] flex flex-col">
