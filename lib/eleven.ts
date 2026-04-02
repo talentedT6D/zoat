@@ -1,7 +1,7 @@
 import type { VoicePreset, VoiceTuning } from "@/types";
 
 const ELEVENLABS_VOICE_ID = "NGd6cAY3u3AiZhUL0IyV";
-const ELEVENLABS_API_URL = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=pcm_44100`;
+const ELEVENLABS_API_URL = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=pcm_22050`;
 
 // Map ZAG voice presets → ElevenLabs style parameters
 const PRESET_CONFIG: Record<
@@ -68,7 +68,7 @@ export async function generateVoice(
   fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
 
   const pcmBuffer = await res.arrayBuffer();
-  const wavBuffer = wrapPcmAsWav(pcmBuffer, 44100, 1, 16);
+  const wavBuffer = wrapPcmAsWav(pcmBuffer, 22050, 1, 16);
   const audioFile = new File([wavBuffer], "voice.wav", { type: "audio/wav" });
   const uploadedUrl = await fal.storage.upload(audioFile);
 
