@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { GenerateRequest } from "@/types";
 import { generateVoice } from "@/lib/eleven";
-import { submitAvatar } from "@/lib/klingAvatar";
 
 export async function POST(req: Request) {
   try {
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Get audio URL — TTS or uploaded
+    // Step 1: Get audio URL only (TTS or uploaded)
     let audioUrl: string;
     if (voiceMode === "upload" && body.uploadedAudioUrl) {
       audioUrl = body.uploadedAudioUrl;
@@ -44,10 +43,7 @@ export async function POST(req: Request) {
       audioUrl = await generateVoice(script, body.voicePreset, body.voiceTuning);
     }
 
-    // 2. Submit to Higgsfield (returns immediately with generation ID)
-    const generationId = await submitAvatar(baseImageUrl, audioUrl);
-
-    return NextResponse.json({ success: true, generationId });
+    return NextResponse.json({ success: true, audioUrl });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(

@@ -119,24 +119,44 @@ export default function Home() {
       setCompiledPrompt(prompt);
 
       try {
-        const res = await fetch("/api/generate", {
+        // Step 1: Generate TTS audio
+        const ttsRes = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(request),
         });
 
-        const data = await res.json();
+        const ttsData = await ttsRes.json();
 
-        if (!data.success) {
+        if (!ttsData.success) {
           setStatus("failed");
-          setError(data.error || "Generation failed");
+          setError(ttsData.error || "TTS generation failed");
           setIsGenerating(false);
           return;
         }
 
-        // Start polling Higgsfield for the video
+        // Step 2: Submit video generation
+        const videoRes = await fetch("/api/submit-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: request.baseImageUrl,
+            audioUrl: ttsData.audioUrl,
+          }),
+        });
+
+        const videoData = await videoRes.json();
+
+        if (!videoData.success) {
+          setStatus("failed");
+          setError(videoData.error || "Video submission failed");
+          setIsGenerating(false);
+          return;
+        }
+
+        // Step 3: Poll for video completion
         pendingRequestRef.current = request;
-        pollVideo(data.generationId);
+        pollVideo(videoData.generationId);
       } catch (err) {
         setStatus("failed");
         setError(err instanceof Error ? err.message : "Network error");
