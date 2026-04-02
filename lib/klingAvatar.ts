@@ -29,7 +29,7 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
       task: "talking-avatar",
       input_image: imageUrl,
       input_audio: audioUrl,
-      quality: "high",
+      quality: "standard",
     }),
   });
 
@@ -54,8 +54,8 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
  * Poll Higgsfield API until the video is ready
  */
 async function pollForCompletion(generationId: string): Promise<string> {
-  const maxAttempts = 120; // 10 minutes at 5s intervals
-  const interval = 5000;
+  const maxAttempts = 300; // 10 minutes at 2s intervals
+  const interval = 2000;
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((r) => setTimeout(r, interval));
