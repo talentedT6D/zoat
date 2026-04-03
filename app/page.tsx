@@ -79,9 +79,19 @@ export default function Home() {
           body: JSON.stringify(request),
         });
 
-        const data = await res.json();
+        // Handle non-JSON responses (server crash, timeout, HTML error pages)
+        const text = await res.text();
+        let data: { success: boolean; videoUrl?: string; error?: string };
+        try {
+          data = JSON.parse(text);
+        } catch {
+          setStatus("failed");
+          setError(`Server error (${res.status}): ${text.slice(0, 100)}`);
+          setIsGenerating(false);
+          return;
+        }
 
-        if (!data.success) {
+        if (!data.success || !data.videoUrl) {
           setStatus("failed");
           setError(data.error || "Generation failed");
           setIsGenerating(false);
@@ -89,8 +99,9 @@ export default function Home() {
         }
 
         // Synchronous response — video URL returned directly
+        const videoUrl = data.videoUrl;
         setStatus("done");
-        setVideoUrl(data.videoUrl);
+        setVideoUrl(videoUrl);
         setIsGenerating(false);
 
         // Add to history
@@ -98,7 +109,7 @@ export default function Home() {
           {
             id: `${Date.now()}`,
             timestamp: Date.now(),
-            videoUrl: data.videoUrl,
+            videoUrl,
             script: request.script,
             voicePreset: request.voicePreset,
             gestureMode: request.gestureMode,

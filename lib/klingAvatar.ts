@@ -73,9 +73,26 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
 }
 
 async function callFal(endpoint: string, input: Record<string, unknown>): Promise<string> {
-  const result = await fal.subscribe(endpoint as Parameters<typeof fal.subscribe>[0], { input });
-  const data = result.data as { video: { url: string } };
-  return data.video.url;
+  try {
+    const result = await fal.subscribe(endpoint as Parameters<typeof fal.subscribe>[0], { input });
+    const data = result.data as Record<string, unknown>;
+
+    // Different models return video in different shapes
+    const video = data.video as { url?: string } | undefined;
+    if (video?.url) return video.url;
+
+    // Some models return video as a direct URL string
+    if (typeof data.video === "string") return data.video as string;
+
+    // Fallback: look for any url in the response
+    const output = data.output as { url?: string } | undefined;
+    if (output?.url) return output.url;
+
+    throw new Error(`No video URL in response from ${endpoint}`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`${endpoint.split("/").pop()} failed: ${msg}`);
+  }
 }
 
 function buildPrompt(compiledPrompt: string): string {
