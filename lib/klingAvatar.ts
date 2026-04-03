@@ -74,46 +74,20 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
 
 async function callFal(endpoint: string, input: Record<string, unknown>): Promise<string> {
   try {
-    // Use queue + polling instead of subscribe to avoid Vercel function timeouts
-    const { request_id } = await fal.queue.submit(endpoint as Parameters<typeof fal.queue.submit>[0], { input });
+    const result = await fal.subscribe(endpoint as Parameters<typeof fal.subscribe>[0], {
+      input,
+      pollInterval: 3000,
+      timeout: 600_000, // 10 minute timeout
+    });
+    const data = result.data as Record<string, unknown>;
 
-    // Poll for completion (check every 5s, up to 4 minutes)
-    const maxWait = 240_000;
-    const pollInterval = 5_000;
-    const start = Date.now();
+    const video = data.video as { url?: string } | undefined;
+    if (video?.url) return video.url;
+    if (typeof data.video === "string") return data.video as string;
+    const output = data.output as { url?: string } | undefined;
+    if (output?.url) return output.url;
 
-    while (Date.now() - start < maxWait) {
-      const statusResult = await fal.queue.status(endpoint as Parameters<typeof fal.queue.status>[0], {
-        requestId: request_id,
-        logs: false,
-      });
-
-      const st = statusResult.status as string;
-
-      if (st === "COMPLETED") {
-        const result = await fal.queue.result(endpoint as Parameters<typeof fal.queue.result>[0], {
-          requestId: request_id,
-        });
-        const data = result.data as Record<string, unknown>;
-
-        const video = data.video as { url?: string } | undefined;
-        if (video?.url) return video.url;
-        if (typeof data.video === "string") return data.video as string;
-        const output = data.output as { url?: string } | undefined;
-        if (output?.url) return output.url;
-
-        throw new Error(`No video URL in response from ${endpoint}`);
-      }
-
-      if (st === "FAILED") {
-        throw new Error("Video generation failed");
-      }
-
-      // Wait before next poll
-      await new Promise((r) => setTimeout(r, pollInterval));
-    }
-
-    throw new Error("Video generation timed out after 4 minutes");
+    throw new Error(`No video URL in response from ${endpoint}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`${endpoint.split("/").pop()} failed: ${msg}`);

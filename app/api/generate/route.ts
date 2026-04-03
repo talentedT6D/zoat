@@ -5,7 +5,7 @@ import { generateVoice } from "@/lib/eleven";
 import { generateAvatar } from "@/lib/klingAvatar";
 import { parseAnnotations } from "@/lib/scriptAnnotations";
 
-export const maxDuration = 300; // 5 minutes for Vercel Pro
+export const maxDuration = 600; // 10 minutes
 
 export async function POST(req: Request) {
   try {
