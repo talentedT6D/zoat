@@ -108,6 +108,7 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     audioUrl,
     prompt,
     animation,
+    model: params.avatarModel,
   });
 
   return videoUrl;

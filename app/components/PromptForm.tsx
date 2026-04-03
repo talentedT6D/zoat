@@ -12,6 +12,7 @@ import type {
   VoiceTuning,
   GenerateRequest,
   CustomPrompts,
+  AvatarModel,
 } from "@/types";
 import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
@@ -53,6 +54,7 @@ export default function PromptForm({
   const [voiceTuning, setVoiceTuning] = useState<VoiceTuning>({
     stability: 7, similarity: 6, speed: 1.0, pitch: 0, exaggeration: 0.3, cfg: 0.5,
   });
+  const [avatarModel, setAvatarModel] = useState<AvatarModel>("aurora");
   const [bodyMovement, setBodyMovement] = useState<BodyMovement>({
     neck: 3, hands: 3, body: 2,
   });
@@ -158,11 +160,11 @@ export default function PromptForm({
 
     onGenerate({
       script: script.trim(), gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning,
-      voiceMode, baseImageUrl,
+      voiceMode, baseImageUrl, avatarModel,
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
       customPrompts: Object.keys(activeCustom).length > 0 ? activeCustom : undefined,
     });
-  }, [isGenerating, baseImageUrl, voiceMode, cleanLength, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning]);
+  }, [isGenerating, baseImageUrl, voiceMode, cleanLength, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, avatarModel]);
 
   const canGenerate = baseImageUrl && !isGenerating &&
     (voiceMode === "tts" ? cleanLength > 0 : !!uploadedAudioUrl);
@@ -520,8 +522,27 @@ export default function PromptForm({
         </Section>
       </div>
 
-      {/* ── Generate Button ── */}
+      {/* ── Model Selector + Generate Button ── */}
       <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06] space-y-2.5">
+        {/* Avatar model toggle */}
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider shrink-0">Model</span>
+          {(["aurora", "hedra"] as const).map((m) => (
+            <button key={m} onClick={() => setAvatarModel(m)}
+              className={`flex-1 py-2 rounded-lg text-[11px] font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
+                avatarModel === m
+                  ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
+                  : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+              }`}>
+              <div className="text-center">
+                <div>{m === "aurora" ? "Aurora" : "Hedra"}</div>
+                <div className={`text-[8px] mt-0.5 ${avatarModel === m ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"}`}>
+                  {m === "aurora" ? "Creatify lip-sync" : "Character animation"}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
         {/* Audio preview row */}
         {voiceMode === "tts" && cleanLength > 0 && (
           <div className="flex items-center gap-2">

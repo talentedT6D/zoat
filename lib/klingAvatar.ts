@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import type { AnimationConfig } from "@/types";
+import type { AnimationConfig, AvatarModel } from "@/types";
 
 // Configure fal client
 fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
@@ -9,23 +9,34 @@ interface AvatarParams {
   audioUrl: string;
   prompt: string;
   animation: AnimationConfig;
+  model?: AvatarModel;
 }
 
 /**
- * Generate talking avatar video using fal.ai Creatify Aurora.
- * Takes base image + audio → returns MP4 video URL.
+ * Generate talking avatar video.
+ * Supports multiple models — user picks which one to use.
  */
 export async function generateAvatar(params: AvatarParams): Promise<string> {
-  const { imageUrl, audioUrl, prompt } = params;
-
+  const { imageUrl, audioUrl, prompt, model = "aurora" } = params;
   const optimizedPrompt = buildPrompt(prompt);
   const hasInlineCues = prompt.includes("Inline Cues:");
 
+  if (model === "hedra") {
+    return generateWithHedra(imageUrl, audioUrl, optimizedPrompt);
+  }
+
+  return generateWithAurora(imageUrl, audioUrl, optimizedPrompt, hasInlineCues);
+}
+
+// ── Aurora (Creatify) ──
+async function generateWithAurora(
+  imageUrl: string, audioUrl: string, prompt: string, hasInlineCues: boolean
+): Promise<string> {
   const result = await fal.subscribe("fal-ai/creatify/aurora", {
     input: {
       image_url: imageUrl,
       audio_url: audioUrl,
-      prompt: optimizedPrompt,
+      prompt,
       guidance_scale: hasInlineCues ? 2 : 1,
       audio_guidance_scale: 2,
       resolution: "720p",
@@ -36,8 +47,24 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
   return data.video.url;
 }
 
+// ── Hedra ──
+async function generateWithHedra(
+  imageUrl: string, audioUrl: string, prompt: string
+): Promise<string> {
+  const result = await fal.subscribe("fal-ai/hedra", {
+    input: {
+      image_url: imageUrl,
+      audio_url: audioUrl,
+      prompt,
+    },
+  });
+
+  const data = result.data as { video: { url: string } };
+  return data.video.url;
+}
+
 /**
- * Build optimized prompt for Aurora.
+ * Build optimized prompt.
  * Prioritizes: identity → inline cues → body movement → script
  */
 function buildPrompt(compiledPrompt: string): string {

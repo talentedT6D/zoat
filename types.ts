@@ -79,6 +79,9 @@ export interface HistoryEntry {
   costume: CostumeVariant;
 }
 
+// === Avatar Model ===
+export type AvatarModel = "aurora" | "hedra";
+
 // === API ===
 export interface GenerateRequest {
   script: string;
@@ -92,4 +95,5 @@ export interface GenerateRequest {
   baseImageUrl: string;
   uploadedAudioUrl?: string;
   customPrompts?: CustomPrompts;
+  avatarModel?: AvatarModel;
 }
