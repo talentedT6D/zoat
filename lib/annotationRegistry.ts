@@ -13,7 +13,11 @@ export type TtsEffect =
   | "ellipsis"       // replaced with "..."
   | "long-ellipsis"  // replaced with ". ..."
   | "uppercase"      // wrapper content UPPERCASED
-  | "passthrough";   // wrapper content left as-is
+  | "whisper"        // lowercase + soft breathy punctuation
+  | "slow-speech"    // commas between words to slow ElevenLabs
+  | "fast-speech"    // strip punctuation, compact for speed
+  | "mumble"         // lowercase, muffled style
+  | "passthrough";   // wrapper content left as-is (prompt hint only)
 
 export type AnnotationCategory =
   | "pause"
@@ -59,15 +63,15 @@ export const REGISTRY: AnnotationDef[] = [
   { tag: "hesitate",  type: "self-closing", category: "timing", label: "Hesitate",  ttsEffect: "ellipsis", promptEffect: "hesitates briefly",   durationAllowed: true, defaultDuration: 1,   tier: "audio" },
   { tag: "stammer",   type: "self-closing", category: "timing", label: "Stammer",   ttsEffect: "ellipsis", promptEffect: "stammers nervously",  durationAllowed: true, defaultDuration: 1,   tier: "audio" },
 
-  // ── Voice (wrappers) ── (tier: audio — loud=CAPS, others=passthrough hint)
-  { tag: "loud",     type: "wrapper", category: "voice", label: "LOUD",     ttsEffect: "uppercase",   promptEffect: "delivers with intensity",    durationAllowed: true, tier: "audio" },
-  { tag: "whisper",  type: "wrapper", category: "voice", label: "Whisper",  ttsEffect: "passthrough", promptEffect: "hushed intimate delivery",   durationAllowed: true, tier: "strong" },
-  { tag: "slow",     type: "wrapper", category: "voice", label: "Slow",     ttsEffect: "passthrough", promptEffect: "slows pace deliberately",    durationAllowed: true, tier: "strong" },
-  { tag: "fast",     type: "wrapper", category: "voice", label: "Fast",     ttsEffect: "passthrough", promptEffect: "speeds up delivery",         durationAllowed: true, tier: "strong" },
-  { tag: "sing",     type: "wrapper", category: "voice", label: "Sing",     ttsEffect: "passthrough", promptEffect: "sings melodically",          durationAllowed: true, tier: "hint" },
-  { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",   ttsEffect: "passthrough", promptEffect: "mumbles under breath",       durationAllowed: true, tier: "hint" },
-  { tag: "echo",     type: "wrapper", category: "voice", label: "Echo",     ttsEffect: "passthrough", promptEffect: "echoing reverb delivery",    durationAllowed: true, tier: "hint" },
-  { tag: "robot",    type: "wrapper", category: "voice", label: "Robot",    ttsEffect: "passthrough", promptEffect: "robotic monotone delivery",  durationAllowed: true, tier: "hint" },
+  // ── Voice (wrappers) ── (tier: audio — these all modify TTS text)
+  { tag: "loud",     type: "wrapper", category: "voice", label: "LOUD",     ttsEffect: "uppercase",    promptEffect: "delivers with intensity",    durationAllowed: true, tier: "audio" },
+  { tag: "whisper",  type: "wrapper", category: "voice", label: "Whisper",  ttsEffect: "whisper",      promptEffect: "hushed intimate delivery",   durationAllowed: true, tier: "audio" },
+  { tag: "slow",     type: "wrapper", category: "voice", label: "Slow",     ttsEffect: "slow-speech",  promptEffect: "slows pace deliberately",    durationAllowed: true, tier: "audio" },
+  { tag: "fast",     type: "wrapper", category: "voice", label: "Fast",     ttsEffect: "fast-speech",  promptEffect: "speeds up delivery",         durationAllowed: true, tier: "audio" },
+  { tag: "sing",     type: "wrapper", category: "voice", label: "Sing",     ttsEffect: "passthrough",  promptEffect: "sings melodically",          durationAllowed: true, tier: "hint" },
+  { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",   ttsEffect: "mumble",       promptEffect: "mumbles under breath",       durationAllowed: true, tier: "audio" },
+  { tag: "echo",     type: "wrapper", category: "voice", label: "Echo",     ttsEffect: "passthrough",  promptEffect: "echoing reverb delivery",    durationAllowed: true, tier: "hint" },
+  { tag: "robot",    type: "wrapper", category: "voice", label: "Robot",    ttsEffect: "passthrough",  promptEffect: "robotic monotone delivery",  durationAllowed: true, tier: "hint" },
 
   // ── Gesture ──
   { tag: "wave",         type: "self-closing", category: "gesture", label: "Wave",         ttsEffect: "none", promptEffect: "waves hand",              positionAware: true, durationAllowed: true, defaultDuration: 1, tier: "strong" },

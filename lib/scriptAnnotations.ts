@@ -57,6 +57,18 @@ export function parseAnnotations(rawScript: string): ParsedScript {
       switch (def.ttsEffect) {
         case "uppercase":
           return content.toUpperCase();
+        case "whisper":
+          // Lowercase + wrap in soft punctuation → ElevenLabs speaks softer/breathier
+          return `...${content.toLowerCase().trim()}...`;
+        case "slow-speech":
+          // Insert commas between words → ElevenLabs pauses between each word
+          return content.trim().split(/\s+/).join(", ");
+        case "fast-speech":
+          // Strip punctuation and compress → ElevenLabs speeds through
+          return content.replace(/[.,;:!?—–-]/g, "").trim();
+        case "mumble":
+          // Lowercase + periods between words → muffled delivery
+          return content.toLowerCase().trim().split(/\s+/).join(". ");
         case "passthrough":
           return content;
         default:
