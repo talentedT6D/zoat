@@ -68,10 +68,9 @@ export const REGISTRY: AnnotationDef[] = [
   { tag: "whisper",  type: "wrapper", category: "voice", label: "Whisper",  ttsEffect: "whisper",      promptEffect: "hushed intimate delivery",   durationAllowed: true, tier: "audio" },
   { tag: "slow",     type: "wrapper", category: "voice", label: "Slow",     ttsEffect: "slow-speech",  promptEffect: "slows pace deliberately",    durationAllowed: true, tier: "audio" },
   { tag: "fast",     type: "wrapper", category: "voice", label: "Fast",     ttsEffect: "fast-speech",  promptEffect: "speeds up delivery",         durationAllowed: true, tier: "audio" },
-  { tag: "sing",     type: "wrapper", category: "voice", label: "Sing",     ttsEffect: "passthrough",  promptEffect: "sings melodically",          durationAllowed: true, tier: "hint" },
+  { tag: "dramatic", type: "wrapper", category: "voice", label: "Dramatic", ttsEffect: "uppercase",    promptEffect: "theatrical dramatic delivery", durationAllowed: true, tier: "audio" },
   { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",   ttsEffect: "mumble",       promptEffect: "mumbles under breath",       durationAllowed: true, tier: "audio" },
-  { tag: "echo",     type: "wrapper", category: "voice", label: "Echo",     ttsEffect: "passthrough",  promptEffect: "echoing reverb delivery",    durationAllowed: true, tier: "hint" },
-  { tag: "robot",    type: "wrapper", category: "voice", label: "Robot",    ttsEffect: "passthrough",  promptEffect: "robotic monotone delivery",  durationAllowed: true, tier: "hint" },
+  { tag: "spell",    type: "wrapper", category: "voice", label: "Spell Out", ttsEffect: "slow-speech", promptEffect: "spells out each word clearly", durationAllowed: true, tier: "audio" },
 
   // ── Gesture ──
   { tag: "wave",         type: "self-closing", category: "gesture", label: "Wave",         ttsEffect: "none", promptEffect: "waves hand",              positionAware: true, durationAllowed: true, defaultDuration: 1, tier: "strong" },
