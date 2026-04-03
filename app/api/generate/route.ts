@@ -96,8 +96,11 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
   let audioUrl: string;
   if (voiceMode === "upload" && uploadedAudioUrl) {
     audioUrl = uploadedAudioUrl;
+  } else if (params.audioUrl) {
+    // Pre-baked audio from Step 1 (two-step workflow) — skip TTS
+    audioUrl = params.audioUrl;
   } else {
-    // Send preprocessed TTS text (pauses → ellipsis, loud → CAPS, tags stripped)
+    // Fallback: generate TTS fresh
     audioUrl = await generateVoice(parsed.ttsText, voicePreset, voiceTuning);
   }
 

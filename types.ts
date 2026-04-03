@@ -94,6 +94,7 @@ export interface GenerateRequest {
   voiceMode: VoiceMode;
   baseImageUrl: string;
   uploadedAudioUrl?: string;
+  audioUrl?: string;           // pre-baked TTS audio from Step 1; skips ElevenLabs in generate
   customPrompts?: CustomPrompts;
   avatarModel?: AvatarModel;
 }

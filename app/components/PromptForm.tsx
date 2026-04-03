@@ -128,12 +128,23 @@ export default function PromptForm({
   const hasAnnotations = cleanLength !== script.length;
   const estDuration = script.trim() ? estimateDuration(script) : 0;
   const [toolbarOpen, setToolbarOpen] = useState(true);
-  const [previewingAudio, setPreviewingAudio] = useState(false);
-  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
+  const [generatingAudio, setGeneratingAudio] = useState(false);
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear generated audio when voice-affecting settings change
+  useEffect(() => {
+    setGeneratedAudioUrl(null);
+    setAudioDuration(null);
+    setAudioError(null);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setAudioPlaying(false);
+  }, [script, voicePreset, voiceTuning]);
 
   const uploadFile = useCallback(async (file: File, type: "image" | "audio") => {
     setUploading(type);
@@ -177,19 +188,23 @@ export default function PromptForm({
       script: script.trim(), gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning,
       voiceMode, baseImageUrl, avatarModel,
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
+      audioUrl: voiceMode === "tts" && generatedAudioUrl ? generatedAudioUrl : undefined,
       customPrompts: Object.keys(activeCustom).length > 0 ? activeCustom : undefined,
     });
-  }, [isGenerating, baseImageUrl, voiceMode, cleanLength, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, avatarModel]);
+  }, [isGenerating, baseImageUrl, voiceMode, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, avatarModel, generatedAudioUrl]);
 
   const canGenerate = baseImageUrl && !isGenerating &&
-    (voiceMode === "tts" ? cleanLength > 0 : !!uploadedAudioUrl);
+    (voiceMode === "upload" ? !!uploadedAudioUrl : !!generatedAudioUrl);
 
   // Audio preview
-  const handlePreviewAudio = useCallback(async () => {
-    if (previewingAudio || cleanLength === 0) return;
-    setPreviewingAudio(true);
-    setPreviewAudioUrl(null);
+  // Step 1: Generate audio
+  const handleGenerateAudio = useCallback(async () => {
+    if (generatingAudio || cleanLength === 0) return;
+    setGeneratingAudio(true);
+    setGeneratedAudioUrl(null);
+    setAudioDuration(null);
     setAudioError(null);
+    setAudioPlaying(false);
     try {
       const res = await fetch("/api/preview-audio", {
         method: "POST",
@@ -198,42 +213,36 @@ export default function PromptForm({
       });
       const data = await res.json();
       if (data.success && data.audioUrl) {
-        setPreviewAudioUrl(data.audioUrl);
-        // Use ref-based audio element for reliable playback
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
+        setGeneratedAudioUrl(data.audioUrl);
+        if (audioRef.current) audioRef.current.pause();
         const audio = new Audio();
         audio.crossOrigin = "anonymous";
         audio.src = data.audioUrl;
+        audio.addEventListener("loadedmetadata", () => {
+          setAudioDuration(Math.round(audio.duration * 10) / 10);
+        });
+        audio.addEventListener("ended", () => setAudioPlaying(false));
         audioRef.current = audio;
-        try {
-          await audio.play();
-        } catch (playErr) {
-          console.warn("Audio play failed:", playErr);
-          // Fallback: user can click replay
-        }
+        audio.play().then(() => setAudioPlaying(true)).catch(() => {});
       } else {
         setAudioError(data.error || "Audio generation failed");
       }
     } catch (err) {
       setAudioError(err instanceof Error ? err.message : "Network error");
     }
-    setPreviewingAudio(false);
-  }, [script, voicePreset, voiceTuning, previewingAudio, cleanLength]);
+    setGeneratingAudio(false);
+  }, [script, voicePreset, voiceTuning, generatingAudio, cleanLength]);
 
-  const replayAudio = useCallback(() => {
-    if (audioRef.current) {
+  const handlePlayPause = useCallback(() => {
+    if (!audioRef.current) return;
+    if (audioPlaying) {
+      audioRef.current.pause();
+      setAudioPlaying(false);
+    } else {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    } else if (previewAudioUrl) {
-      const audio = new Audio();
-      audio.crossOrigin = "anonymous";
-      audio.src = previewAudioUrl;
-      audioRef.current = audio;
-      audio.play().catch(() => {});
+      audioRef.current.play().then(() => setAudioPlaying(true)).catch(() => {});
     }
-  }, [previewAudioUrl]);
+  }, [audioPlaying]);
 
   // Ctrl+Enter to generate
   useEffect(() => {
@@ -537,12 +546,94 @@ export default function PromptForm({
         </Section>
       </div>
 
-      {/* ── Model Selector + Generate Button ── */}
-      <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06] space-y-2.5">
-        {/* Avatar model selector */}
-        <div>
-          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mb-1.5 block">Avatar Model</span>
-          <div className="grid grid-cols-3 gap-1.5">
+      {/* ═══ Two-Step Workflow ═══ */}
+      <div className="px-6 py-4 border-t border-[#9b51e0]/[0.06] space-y-3">
+
+        {/* ── STEP 1: AUDIO ── */}
+        {voiceMode === "tts" && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center ${
+                generatedAudioUrl ? "bg-[#4ade80]/15 text-[#4ade80]" : "bg-[#9b51e0]/10 text-[#b87df5]"
+              }`}>1</span>
+              <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Audio</span>
+              {generatedAudioUrl && audioDuration && (
+                <span className="text-[9px] text-[#4ade80]/40 ml-auto">{audioDuration}s ready</span>
+              )}
+            </div>
+
+            {!generatedAudioUrl && !generatingAudio && (
+              <button onClick={handleGenerateAudio} disabled={cleanLength === 0}
+                className={`w-full py-3 rounded-xl text-[12px] font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
+                  cleanLength > 0 ? "bg-[#9b51e0]/10 text-[#b87df5] border border-[#9b51e0]/15 hover:bg-[#9b51e0]/20" : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/10 cursor-not-allowed"
+                }`}>
+                Generate Audio
+              </button>
+            )}
+
+            {generatingAudio && (
+              <div className="w-full py-3 rounded-xl bg-[#9b51e0]/5 border border-[#9b51e0]/10 flex items-center justify-center gap-2 text-[12px] text-[#b87df5]/50">
+                <Spinner size="sm" /> Generating audio...
+              </div>
+            )}
+
+            {generatedAudioUrl && (
+              <div className="rounded-xl bg-[#9b51e0]/[0.04] border border-[#9b51e0]/10 p-3 flex items-center gap-3">
+                {/* Waveform bars */}
+                <div className="flex items-end gap-0.5 h-6">
+                  {[0.6, 1, 0.7, 0.9, 0.5].map((h, i) => (
+                    <div key={i} className={`waveform-bar ${audioPlaying ? "waveform-playing" : ""}`}
+                      style={{ height: `${h * 24}px`, animationDelay: `${i * 0.12}s` }} />
+                  ))}
+                </div>
+                {/* Duration */}
+                <span className="text-[12px] font-[family-name:var(--font-mono)] text-[#f5f0ff]/30 min-w-[40px]">
+                  {audioDuration ? `${audioDuration}s` : "..."}
+                </span>
+                {/* Play/Pause */}
+                <button onClick={handlePlayPause}
+                  className="w-8 h-8 rounded-lg bg-[#9b51e0]/10 flex items-center justify-center text-[#b87df5] hover:bg-[#9b51e0]/20 transition-colors cursor-pointer">
+                  {audioPlaying ? (
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                  )}
+                </button>
+                {/* Regenerate */}
+                <button onClick={handleGenerateAudio}
+                  className="ml-auto text-[9px] text-[#f5f0ff]/15 hover:text-[#b87df5] transition-colors cursor-pointer uppercase tracking-wider">
+                  Regenerate
+                </button>
+              </div>
+            )}
+
+            {audioError && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <span className="text-[9px] text-[#ff6900]/50">{audioError}</span>
+                <button onClick={handleGenerateAudio} className="text-[9px] text-[#b87df5]/40 hover:text-[#b87df5] cursor-pointer">Retry</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Connector */}
+        {voiceMode === "tts" && (
+          <div className="flex justify-center">
+            <div className={`w-px h-4 ${generatedAudioUrl ? "bg-[#9b51e0]/20" : "bg-[#f5f0ff]/5"}`} />
+          </div>
+        )}
+
+        {/* ── STEP 2: VIDEO ── */}
+        <div className={`transition-opacity ${voiceMode === "tts" && !generatedAudioUrl ? "opacity-30 pointer-events-none" : "opacity-100"}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center ${
+              voiceMode === "upload" || generatedAudioUrl ? "bg-[#9b51e0]/10 text-[#b87df5]" : "bg-[#f5f0ff]/5 text-[#f5f0ff]/10"
+            }`}>{voiceMode === "upload" ? "1" : "2"}</span>
+            <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Video</span>
+          </div>
+
+          {/* Model selector */}
+          <div className="grid grid-cols-3 gap-1.5 mb-2.5">
             {MODEL_OPTIONS.map(({ id, name, desc }) => (
               <button key={id} onClick={() => setAvatarModel(id)}
                 className={`py-2 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
@@ -555,48 +646,22 @@ export default function PromptForm({
               </button>
             ))}
           </div>
+
+          {/* Generate Video button */}
+          <button onClick={handleSubmit} disabled={!canGenerate}
+            className={`w-full py-3.5 rounded-xl text-sm font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
+              canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/15 cursor-not-allowed"
+            }`}>
+            {isGenerating ? (
+              <span className="flex items-center justify-center gap-2.5"><Spinner size="sm" />Generating video...</span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                Generate Video
+                <kbd className="text-[9px] opacity-40 font-[family-name:var(--font-mono)] bg-white/5 px-1.5 py-0.5 rounded">Ctrl+Enter</kbd>
+              </span>
+            )}
+          </button>
         </div>
-        {/* Audio preview row */}
-        {voiceMode === "tts" && cleanLength > 0 && (
-          <div className="flex items-center gap-2">
-            <button onClick={handlePreviewAudio} disabled={previewingAudio}
-              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-[family-name:var(--font-body)] font-medium border border-[#9b51e0]/10 text-[#f5f0ff]/30 hover:text-[#b87df5] hover:border-[#9b51e0]/20 transition-all cursor-pointer disabled:opacity-30">
-              {previewingAudio ? (
-                <><Spinner size="sm" /> Generating audio...</>
-              ) : (
-                <>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
-                  </svg>
-                  Preview Audio
-                </>
-              )}
-            </button>
-            {audioError && (
-              <span className="text-[9px] text-[#ff6900]/50">{audioError}</span>
-            )}
-            {previewAudioUrl && (
-              <button onClick={replayAudio}
-                className="w-8 h-8 rounded-lg border border-[#9b51e0]/10 flex items-center justify-center text-[#b87df5]/50 hover:text-[#b87df5] transition-colors cursor-pointer"
-                title="Replay audio">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              </button>
-            )}
-          </div>
-        )}
-        <button onClick={handleSubmit} disabled={!canGenerate}
-          className={`w-full py-3.5 rounded-xl text-sm font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
-            canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/15 cursor-not-allowed"
-          }`}>
-          {isGenerating ? (
-            <span className="flex items-center justify-center gap-2.5"><Spinner size="sm" />Generating...</span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              Generate Video
-              <kbd className="text-[9px] opacity-40 font-[family-name:var(--font-mono)] bg-white/5 px-1.5 py-0.5 rounded">Ctrl+Enter</kbd>
-            </span>
-          )}
-        </button>
       </div>
     </div>
   );
