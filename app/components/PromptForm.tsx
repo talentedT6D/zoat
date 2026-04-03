@@ -82,7 +82,7 @@ export default function PromptForm({
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState("");
   const [audioFileName, setAudioFileName] = useState("");
   const [uploading, setUploading] = useState<"image" | "audio" | null>(null);
-  const [voiceExpanded, setVoiceExpanded] = useState(false);
+
 
   const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({});
   const [openCustom, setOpenCustom] = useState<Record<string, boolean>>({});
@@ -436,114 +436,10 @@ export default function PromptForm({
                 </button>
               ))}
             </div>
-            <CustomPromptInput sectionKey="voice" value={customPrompts.voice || ""} isOpen={!!openCustom.voice}
-              onToggle={() => toggleCustom("voice")} onChange={(v) => setCustom("voice", v)}
-              placeholder="e.g. Calm narrator, BBC documentary style..." />
           </Section>
         )}
 
-        {/* ── Voice Tuning ── */}
-        {voiceMode === "tts" && (
-          <Section label="Voice Tuning">
-            <div className="space-y-3">
-              <Slider label="Stability" value={voiceTuning.stability} min={0} max={10} step={1}
-                onChange={(v) => setVoiceTuning((p) => ({ ...p, stability: v }))} />
-              <Slider label="Similarity" value={voiceTuning.similarity} min={0} max={10} step={1}
-                onChange={(v) => setVoiceTuning((p) => ({ ...p, similarity: v }))} />
-              <button onClick={() => setVoiceExpanded(!voiceExpanded)}
-                className="flex items-center gap-1.5 text-[10px] text-[#f5f0ff]/20 hover:text-[#9b51e0]/60 transition-colors cursor-pointer pt-1">
-                <svg className={`w-3 h-3 transition-transform ${voiceExpanded ? "rotate-90" : ""}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-                Advanced Controls
-              </button>
-              {voiceExpanded && (
-                <div className="space-y-3 animate-fade-in pl-2 border-l border-[#9b51e0]/[0.06] ml-1">
-                  <Slider label="Speed" value={voiceTuning.speed} min={0.5} max={2} step={0.1}
-                    formatValue={(v) => `${v.toFixed(1)}x`} onChange={(v) => setVoiceTuning((p) => ({ ...p, speed: v }))} />
-                  <Slider label="Pitch" value={voiceTuning.pitch} min={-10} max={10} step={1}
-                    formatValue={(v) => (v > 0 ? `+${v}` : `${v}`)} onChange={(v) => setVoiceTuning((p) => ({ ...p, pitch: v }))} />
-                  <Slider label="Exaggeration" value={voiceTuning.exaggeration} min={0} max={1} step={0.05}
-                    formatValue={(v) => `${(v * 100).toFixed(0)}%`} onChange={(v) => setVoiceTuning((p) => ({ ...p, exaggeration: v }))} />
-                  <Slider label="CFG Strength" value={voiceTuning.cfg} min={0} max={1} step={0.05}
-                    formatValue={(v) => `${(v * 100).toFixed(0)}%`} onChange={(v) => setVoiceTuning((p) => ({ ...p, cfg: v }))} />
-                </div>
-              )}
-            </div>
-          </Section>
-        )}
 
-        <div className="section-divider" />
-
-        {/* ── Gesture Mode ── */}
-        <Section label="Gesture">
-          <div className="grid grid-cols-2 gap-2">
-            {(["A", "B"] as GestureMode[]).map((mode) => (
-              <button key={mode} onClick={() => setGestureMode(mode)}
-                className={`py-3 px-4 rounded-xl text-left transition-all cursor-pointer ${
-                  gestureMode === mode ? "bg-[#9b51e0]/10 border border-[#9b51e0]/18 glow-brand-sm" : "glass glass-hover"
-                }`}>
-                <span className={`text-xs font-[family-name:var(--font-heading)] font-semibold block ${gestureMode === mode ? "text-[#b87df5]" : "text-[#f5f0ff]/45"}`}>
-                  Type {mode}
-                </span>
-                <span className={`text-[10px] mt-0.5 block ${gestureMode === mode ? "text-[#9b51e0]/50" : "text-[#f5f0ff]/18"}`}>
-                  {mode === "A" ? "Static · head pat end" : "Subtle motion"}
-                </span>
-              </button>
-            ))}
-          </div>
-          <CustomPromptInput sectionKey="gesture" value={customPrompts.gesture || ""} isOpen={!!openCustom.gesture}
-            onToggle={() => toggleCustom("gesture")} onChange={(v) => setCustom("gesture", v)}
-            placeholder="e.g. Hands waving energetically, pointing at camera..." />
-        </Section>
-
-        {/* ── Costume ── */}
-        <Section label="Costume">
-          <div className="grid grid-cols-3 gap-1.5">
-            {COSTUMES.map((c) => (
-              <button key={c.id} onClick={() => setCostume(c.id)}
-                className={`py-2.5 rounded-lg text-xs font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
-                  costume === c.id ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/18" : "glass glass-hover text-[#f5f0ff]/35"
-                }`}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <CustomPromptInput sectionKey="costume" value={customPrompts.costume || ""} isOpen={!!openCustom.costume}
-            onToggle={() => toggleCustom("costume")} onChange={(v) => setCustom("costume", v)}
-            placeholder="e.g. Wearing a red Santa hat, gold chain necklace..." />
-        </Section>
-
-        {/* ── Mouth Articulation ── */}
-        <Section label="Mouth Articulation">
-          <div className="space-y-3">
-            <Slider label="Open Width" value={mouth.openWidth} min={1} max={10} step={1}
-              onChange={(v) => setMouth((p) => ({ ...p, openWidth: v }))} />
-            <Slider label="Speed" value={mouth.speed} min={1} max={10} step={1}
-              onChange={(v) => setMouth((p) => ({ ...p, speed: v }))} />
-            <Slider label="Jaw Close" value={mouth.jawClose} min={1} max={10} step={1}
-              onChange={(v) => setMouth((p) => ({ ...p, jawClose: v }))} />
-          </div>
-          <CustomPromptInput sectionKey="mouth" value={customPrompts.mouth || ""} isOpen={!!openCustom.mouth}
-            onToggle={() => toggleCustom("mouth")} onChange={(v) => setCustom("mouth", v)}
-            placeholder="e.g. Exaggerated cartoon lip-sync, snappy jaw on consonants..." />
-        </Section>
-
-        {/* ── Body Movement ── */}
-        <Section label="Body Movement">
-          <div className="space-y-3">
-            <Slider label="Neck" value={bodyMovement.neck} min={0} max={10} step={1}
-              formatValue={(v) => v <= 2 ? "Locked" : v <= 5 ? "Slight" : v <= 8 ? "Moderate" : "Full"}
-              onChange={(v) => setBodyMovement((p) => ({ ...p, neck: v }))} />
-            <Slider label="Hands" value={bodyMovement.hands} min={0} max={10} step={1}
-              formatValue={(v) => v <= 2 ? "None" : v <= 5 ? "Subtle" : v <= 8 ? "Moderate" : "Expressive"}
-              onChange={(v) => setBodyMovement((p) => ({ ...p, hands: v }))} />
-            <Slider label="Body" value={bodyMovement.body} min={0} max={10} step={1}
-              formatValue={(v) => v <= 2 ? "Statue" : v <= 5 ? "Minimal" : v <= 8 ? "Moderate" : "Dynamic"}
-              onChange={(v) => setBodyMovement((p) => ({ ...p, body: v }))} />
-          </div>
-        </Section>
       </div>
 
       {/* ═══ Two-Step Workflow ═══ */}
@@ -631,6 +527,63 @@ export default function PromptForm({
             }`}>{voiceMode === "upload" ? "1" : "2"}</span>
             <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Video</span>
           </div>
+
+          {/* Video settings — collapsed by default */}
+          <details className="mb-2">
+            <summary className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider cursor-pointer hover:text-[#f5f0ff]/25 transition-colors list-none flex items-center gap-1.5">
+              <svg className="w-3 h-3 transition-transform details-open-rotate" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+              Video Settings
+            </summary>
+            <div className="mt-2 space-y-3 pl-1">
+              {/* Gesture */}
+              <div>
+                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Gesture</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(["A", "B"] as GestureMode[]).map((mode) => (
+                    <button key={mode} onClick={() => setGestureMode(mode)}
+                      className={`py-2 px-3 rounded-lg text-left transition-all cursor-pointer ${
+                        gestureMode === mode ? "bg-[#9b51e0]/10 border border-[#9b51e0]/18" : "bg-[#f5f0ff]/[0.02] border border-transparent"
+                      }`}>
+                      <span className={`text-[10px] font-medium block ${gestureMode === mode ? "text-[#b87df5]" : "text-[#f5f0ff]/30"}`}>
+                        Type {mode} — {mode === "A" ? "Static" : "Subtle motion"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Costume */}
+              <div>
+                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Costume</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {COSTUMES.map((c) => (
+                    <button key={c.id} onClick={() => setCostume(c.id)}
+                      className={`py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
+                        costume === c.id ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/18" : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/25 border border-transparent"
+                      }`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Body Movement */}
+              <div>
+                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Body Movement</span>
+                <div className="space-y-2">
+                  <Slider label="Neck" value={bodyMovement.neck} min={0} max={10} step={1}
+                    formatValue={(v) => v <= 2 ? "Locked" : v <= 5 ? "Slight" : v <= 8 ? "Moderate" : "Full"}
+                    onChange={(v) => setBodyMovement((p) => ({ ...p, neck: v }))} />
+                  <Slider label="Hands" value={bodyMovement.hands} min={0} max={10} step={1}
+                    formatValue={(v) => v <= 2 ? "None" : v <= 5 ? "Subtle" : v <= 8 ? "Moderate" : "Expressive"}
+                    onChange={(v) => setBodyMovement((p) => ({ ...p, hands: v }))} />
+                  <Slider label="Body" value={bodyMovement.body} min={0} max={10} step={1}
+                    formatValue={(v) => v <= 2 ? "Statue" : v <= 5 ? "Minimal" : v <= 8 ? "Moderate" : "Dynamic"}
+                    onChange={(v) => setBodyMovement((p) => ({ ...p, body: v }))} />
+                </div>
+              </div>
+            </div>
+          </details>
 
           {/* Model selector */}
           <div className="grid grid-cols-3 gap-1.5 mb-2.5">
