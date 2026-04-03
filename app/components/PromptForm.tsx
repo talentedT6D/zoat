@@ -17,19 +17,19 @@ import type {
 import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
-const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string }[] = [
+const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string; maxSec: number }[] = [
   // Best for gestures/body movement
-  { id: "omnihuman",  name: "OmniHuman",  desc: "Best gestures + body" },
-  { id: "wan-speech",  name: "Wan 2.2",    desc: "Full body, 14B model" },
-  { id: "echomimic", name: "EchoMimic",  desc: "Upper body + hands" },
+  { id: "omnihuman",  name: "OmniHuman",  desc: "Best gestures + body", maxSec: 60 },
+  { id: "wan-speech",  name: "Wan 2.2",    desc: "Full body, 14B model", maxSec: 15 },
+  { id: "echomimic", name: "EchoMimic",  desc: "Upper body + hands", maxSec: 15 },
   // General purpose
-  { id: "aurora",    name: "Aurora",     desc: "Reliable lip-sync" },
-  { id: "kling",     name: "Kling Pro",  desc: "High quality" },
-  { id: "hedra",     name: "Hedra",      desc: "Character style" },
+  { id: "aurora",    name: "Aurora",     desc: "Reliable lip-sync", maxSec: 120 },
+  { id: "kling",     name: "Kling Pro",  desc: "High quality", maxSec: 60 },
+  { id: "hedra",     name: "Hedra",      desc: "Character style", maxSec: 30 },
   // More options
-  { id: "ai-avatar", name: "AI Avatar",  desc: "145 frames, 720p" },
-  { id: "hunyuan",   name: "Hunyuan",    desc: "Tencent animation" },
-  { id: "infinitalk", name: "InfiniTalk", desc: "Long-form avatar" },
+  { id: "ai-avatar", name: "AI Avatar",  desc: "Max ~6s, 720p", maxSec: 6 },
+  { id: "hunyuan",   name: "Hunyuan",    desc: "Tencent animation", maxSec: 15 },
+  { id: "infinitalk", name: "InfiniTalk", desc: "Long-form avatar", maxSec: 30 },
 ];
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
@@ -586,19 +586,39 @@ export default function PromptForm({
           </details>
 
           {/* Model selector */}
-          <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-            {MODEL_OPTIONS.map(({ id, name, desc }) => (
-              <button key={id} onClick={() => setAvatarModel(id)}
-                className={`py-2 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                  avatarModel === id
-                    ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
-                    : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
-                }`}>
-                <div className="text-[10px] font-[family-name:var(--font-body)] font-medium">{name}</div>
-                <div className={`text-[7px] mt-0.5 leading-tight ${avatarModel === id ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"}`}>{desc}</div>
-              </button>
-            ))}
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
+            {MODEL_OPTIONS.map(({ id, name, desc, maxSec }) => {
+              const tooLong = audioDuration != null && audioDuration > maxSec;
+              return (
+                <button key={id} onClick={() => setAvatarModel(id)}
+                  className={`py-2 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                    avatarModel === id
+                      ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
+                      : tooLong
+                        ? "bg-[#f5f0ff]/[0.01] text-[#f5f0ff]/10 border border-transparent opacity-50"
+                        : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+                  }`}>
+                  <div className="text-[10px] font-[family-name:var(--font-body)] font-medium">{name}</div>
+                  <div className={`text-[7px] mt-0.5 leading-tight ${
+                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"
+                  }`}>
+                    {tooLong ? `Max ${maxSec}s` : desc}
+                  </div>
+                </button>
+              );
+            })}
           </div>
+          {(() => {
+            const sel = MODEL_OPTIONS.find(m => m.id === avatarModel);
+            if (sel && audioDuration != null && audioDuration > sel.maxSec) {
+              return (
+                <div className="text-[9px] text-[#ff6900]/50 mb-2">
+                  Audio is {audioDuration}s but {sel.name} supports max ~{sel.maxSec}s. Use a shorter script or pick Aurora/OmniHuman.
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Generate Video button */}
           <button onClick={handleSubmit} disabled={!canGenerate}
