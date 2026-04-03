@@ -1,7 +1,6 @@
 import { fal } from "@fal-ai/client";
 import type { AnimationConfig, AvatarModel } from "@/types";
 
-// Configure fal client
 fal.config({ credentials: process.env.FAL_KEY || "edc34a51-7f9f-4726-b931-3d6eca3986ea:79a3307eb88a467aa444213ec04d5632" });
 
 interface AvatarParams {
@@ -12,61 +11,55 @@ interface AvatarParams {
   model?: AvatarModel;
 }
 
-/**
- * Generate talking avatar video.
- * Supports multiple models — user picks which one to use.
- */
 export async function generateAvatar(params: AvatarParams): Promise<string> {
   const { imageUrl, audioUrl, prompt, model = "aurora" } = params;
   const optimizedPrompt = buildPrompt(prompt);
-  const hasInlineCues = prompt.includes("Inline Cues:");
 
-  if (model === "hedra") {
-    return generateWithHedra(imageUrl, audioUrl, optimizedPrompt);
+  switch (model) {
+    case "hedra":
+      return callFal("fal-ai/hedra", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+      });
+
+    case "ai-avatar":
+      return callFal("fal-ai/ai-avatar", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        num_frames: 145, resolution: "720p",
+      });
+
+    case "kling":
+      return callFal("fal-ai/kling-video/v1/pro/ai-avatar", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+      });
+
+    case "hunyuan":
+      return callFal("fal-ai/hunyuan-avatar", {
+        image_url: imageUrl, audio_url: audioUrl, text: optimizedPrompt,
+        num_inference_steps: 30,
+      });
+
+    case "echomimic":
+      return callFal("fal-ai/echomimic-v3", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        guidance_scale: 4.5, audio_guidance_scale: 2.5,
+      });
+
+    case "aurora":
+    default:
+      return callFal("fal-ai/creatify/aurora", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        guidance_scale: prompt.includes("Inline Cues:") ? 2 : 1,
+        audio_guidance_scale: 2, resolution: "720p",
+      });
   }
-
-  return generateWithAurora(imageUrl, audioUrl, optimizedPrompt, hasInlineCues);
 }
 
-// ── Aurora (Creatify) ──
-async function generateWithAurora(
-  imageUrl: string, audioUrl: string, prompt: string, hasInlineCues: boolean
-): Promise<string> {
-  const result = await fal.subscribe("fal-ai/creatify/aurora", {
-    input: {
-      image_url: imageUrl,
-      audio_url: audioUrl,
-      prompt,
-      guidance_scale: hasInlineCues ? 2 : 1,
-      audio_guidance_scale: 2,
-      resolution: "720p",
-    },
-  });
-
+async function callFal(endpoint: string, input: Record<string, unknown>): Promise<string> {
+  const result = await fal.subscribe(endpoint as Parameters<typeof fal.subscribe>[0], { input });
   const data = result.data as { video: { url: string } };
   return data.video.url;
 }
 
-// ── Hedra ──
-async function generateWithHedra(
-  imageUrl: string, audioUrl: string, prompt: string
-): Promise<string> {
-  const result = await fal.subscribe("fal-ai/hedra", {
-    input: {
-      image_url: imageUrl,
-      audio_url: audioUrl,
-      prompt,
-    },
-  });
-
-  const data = result.data as { video: { url: string } };
-  return data.video.url;
-}
-
-/**
- * Build optimized prompt.
- * Prioritizes: identity → inline cues → body movement → script
- */
 function buildPrompt(compiledPrompt: string): string {
   const cuesMatch = compiledPrompt.match(/Inline Cues:\n([\s\S]*?)(?=\n\n|$)/);
   const inlineCues = cuesMatch ? cuesMatch[0] : "";
@@ -82,9 +75,7 @@ function buildPrompt(compiledPrompt: string): string {
 
   const parts = [
     "9:16 vertical. Black crocodile mascot (ZAG) in full-body suit, white gloves, holding microphone, speaking to camera on green screen.",
-    inlineCues,
-    bodyText,
-    toneText,
+    inlineCues, bodyText, toneText,
     scriptText ? `Speaking: "${scriptText}"` : "",
   ].filter(Boolean);
 

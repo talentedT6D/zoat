@@ -17,6 +17,15 @@ import type {
 import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
+const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string }[] = [
+  { id: "aurora",    name: "Aurora",     desc: "Creatify lip-sync" },
+  { id: "hedra",     name: "Hedra",      desc: "Character animation" },
+  { id: "ai-avatar", name: "AI Avatar",  desc: "More frames, 720p" },
+  { id: "kling",     name: "Kling Pro",  desc: "Kling quality" },
+  { id: "hunyuan",   name: "Hunyuan",    desc: "Hunyuan animation" },
+  { id: "echomimic", name: "EchoMimic",  desc: "Expressive gestures" },
+];
+
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
   { id: "default", label: "Default" },
   { id: "chef", label: "Chef" },
@@ -524,24 +533,22 @@ export default function PromptForm({
 
       {/* ── Model Selector + Generate Button ── */}
       <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06] space-y-2.5">
-        {/* Avatar model toggle */}
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider shrink-0">Model</span>
-          {(["aurora", "hedra"] as const).map((m) => (
-            <button key={m} onClick={() => setAvatarModel(m)}
-              className={`flex-1 py-2 rounded-lg text-[11px] font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
-                avatarModel === m
-                  ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
-                  : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
-              }`}>
-              <div className="text-center">
-                <div>{m === "aurora" ? "Aurora" : "Hedra"}</div>
-                <div className={`text-[8px] mt-0.5 ${avatarModel === m ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"}`}>
-                  {m === "aurora" ? "Creatify lip-sync" : "Character animation"}
-                </div>
-              </div>
-            </button>
-          ))}
+        {/* Avatar model selector */}
+        <div>
+          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider mb-1.5 block">Avatar Model</span>
+          <div className="grid grid-cols-3 gap-1.5">
+            {MODEL_OPTIONS.map(({ id, name, desc }) => (
+              <button key={id} onClick={() => setAvatarModel(id)}
+                className={`py-2 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                  avatarModel === id
+                    ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
+                    : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+                }`}>
+                <div className="text-[10px] font-[family-name:var(--font-body)] font-medium">{name}</div>
+                <div className={`text-[7px] mt-0.5 leading-tight ${avatarModel === id ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"}`}>{desc}</div>
+              </button>
+            ))}
+          </div>
         </div>
         {/* Audio preview row */}
         {voiceMode === "tts" && cleanLength > 0 && (
