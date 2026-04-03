@@ -111,6 +111,8 @@ export default function PromptForm({
   const hasAnnotations = cleanLength !== script.length;
   const estDuration = script.trim() ? estimateDuration(script) : 0;
   const [toolbarOpen, setToolbarOpen] = useState(true);
+  const [previewingAudio, setPreviewingAudio] = useState(false);
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -141,7 +143,7 @@ export default function PromptForm({
     if (file && file.type.startsWith("image/")) uploadFile(file, "image");
   }, [uploadFile]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (isGenerating || !baseImageUrl) return;
     if (voiceMode === "tts" && cleanLength === 0) return;
     if (voiceMode === "upload" && !uploadedAudioUrl) return;
@@ -158,10 +160,43 @@ export default function PromptForm({
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
       customPrompts: Object.keys(activeCustom).length > 0 ? activeCustom : undefined,
     });
-  };
+  }, [isGenerating, baseImageUrl, voiceMode, cleanLength, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning]);
 
   const canGenerate = baseImageUrl && !isGenerating &&
     (voiceMode === "tts" ? cleanLength > 0 : !!uploadedAudioUrl);
+
+  // Audio preview
+  const handlePreviewAudio = useCallback(async () => {
+    if (previewingAudio || cleanLength === 0) return;
+    setPreviewingAudio(true);
+    setPreviewAudioUrl(null);
+    try {
+      const res = await fetch("/api/preview-audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script: script.trim(), voicePreset, voiceTuning }),
+      });
+      const data = await res.json();
+      if (data.success && data.audioUrl) {
+        setPreviewAudioUrl(data.audioUrl);
+        const audio = new Audio(data.audioUrl);
+        audio.play();
+      }
+    } catch { /* ignore */ }
+    setPreviewingAudio(false);
+  }, [script, voicePreset, voiceTuning, previewingAudio, cleanLength]);
+
+  // Ctrl+Enter to generate
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && canGenerate) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [canGenerate, handleSubmit]);
 
   return (
     <div className="w-[420px] min-w-[420px] h-full overflow-y-auto bg-[#0a0814] border-r border-[#9b51e0]/[0.06] flex flex-col">
@@ -455,14 +490,44 @@ export default function PromptForm({
       </div>
 
       {/* ── Generate Button ── */}
-      <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06]">
+      <div className="px-6 py-5 border-t border-[#9b51e0]/[0.06] space-y-2.5">
+        {/* Audio preview row */}
+        {voiceMode === "tts" && cleanLength > 0 && (
+          <div className="flex items-center gap-2">
+            <button onClick={handlePreviewAudio} disabled={previewingAudio}
+              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-[family-name:var(--font-body)] font-medium border border-[#9b51e0]/10 text-[#f5f0ff]/30 hover:text-[#b87df5] hover:border-[#9b51e0]/20 transition-all cursor-pointer disabled:opacity-30">
+              {previewingAudio ? (
+                <><Spinner size="sm" /> Generating audio...</>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                  </svg>
+                  Preview Audio
+                </>
+              )}
+            </button>
+            {previewAudioUrl && (
+              <button onClick={() => new Audio(previewAudioUrl).play()}
+                className="w-8 h-8 rounded-lg border border-[#9b51e0]/10 flex items-center justify-center text-[#b87df5]/50 hover:text-[#b87df5] transition-colors cursor-pointer"
+                title="Replay audio">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              </button>
+            )}
+          </div>
+        )}
         <button onClick={handleSubmit} disabled={!canGenerate}
           className={`w-full py-3.5 rounded-xl text-sm font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
             canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/15 cursor-not-allowed"
           }`}>
           {isGenerating ? (
             <span className="flex items-center justify-center gap-2.5"><Spinner size="sm" />Generating...</span>
-          ) : "Generate Video"}
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              Generate Video
+              <kbd className="text-[9px] opacity-40 font-[family-name:var(--font-mono)] bg-white/5 px-1.5 py-0.5 rounded">Ctrl+Enter</kbd>
+            </span>
+          )}
         </button>
       </div>
     </div>

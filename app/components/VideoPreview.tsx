@@ -79,8 +79,16 @@ export default function VideoPreview({
       {/* ── Main preview area ── */}
       <div className="relative flex-1 flex items-center justify-center p-10">
         {status === "done" && videoUrl ? (
-          <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glow-brand animate-fade-in">
-            <video src={videoUrl} controls autoPlay className="w-full h-full object-cover" />
+          <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glow-brand animate-fade-in group">
+            <video src={videoUrl} controls autoPlay loop className="w-full h-full object-cover" />
+            {/* Download button */}
+            <a href={videoUrl} download={`zag-${Date.now()}.mp4`} target="_blank" rel="noopener noreferrer"
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-[#08060e]/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#9b51e0]/30 cursor-pointer"
+              title="Download MP4">
+              <svg className="w-4 h-4 text-[#f5f0ff]/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </a>
           </div>
         ) : (
           <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glass">
@@ -143,6 +151,15 @@ export default function VideoPreview({
         <InfoChip label="Voice" value={voicePreset} capitalize />
         <Divider />
         <InfoChip label="Format" value="9:16" />
+        {videoUrl && status === "done" && (
+          <>
+            <Divider />
+            <a href={videoUrl} download target="_blank" rel="noopener noreferrer"
+              className="text-[10px] text-[#b87df5]/30 hover:text-[#b87df5]/60 font-[family-name:var(--font-body)] transition-colors cursor-pointer">
+              Download MP4
+            </a>
+          </>
+        )}
       </div>
 
       {compiledPrompt && (
