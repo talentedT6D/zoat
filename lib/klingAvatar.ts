@@ -18,9 +18,10 @@ interface AvatarParams {
 export async function generateAvatar(params: AvatarParams): Promise<string> {
   const { imageUrl, audioUrl, prompt } = params;
 
-  // Scale guidance based on how much movement is requested
-  // More movement description → higher guidance to follow the prompt
-  const guidanceScale = prompt.length > 800 ? 1.5 : 1;
+  // Scale guidance based on how much direction is in the prompt
+  // More annotations/movement → higher guidance to follow the prompt
+  const hasInlineCues = prompt.includes("Inline Cues:");
+  const guidanceScale = hasInlineCues ? 2 : prompt.length > 800 ? 1.5 : 1;
 
   const result = await fal.subscribe("fal-ai/creatify/aurora", {
     input: {
@@ -38,8 +39,30 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
 }
 
 /**
- * Condense the full compiled prompt into Aurora-optimized guidance
+ * Condense the full compiled prompt into Aurora-optimized guidance.
+ * Prioritizes inline cues (annotations) over static costume/mouth rules
+ * since Aurora has limited prompt budget.
  */
 function buildAuroraPrompt(compiledPrompt: string): string {
-  return `9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera. ${compiledPrompt.slice(0, 700)}`;
+  // Extract the Inline Cues block if present — this is the most actionable part
+  const cuesMatch = compiledPrompt.match(/Inline Cues:\n([\s\S]*?)(?=\n\n|$)/);
+  const inlineCues = cuesMatch ? cuesMatch[0] : "";
+
+  // Extract the Script block
+  const scriptMatch = compiledPrompt.match(/Script:\n"([\s\S]*?)"/);
+  const scriptText = scriptMatch ? scriptMatch[1].slice(0, 200) : "";
+
+  // Extract Body Movement block (Aurora can actually respond to movement descriptions)
+  const bodyMatch = compiledPrompt.match(/Body Movement:\n([\s\S]*?)(?=\n\n|$)/);
+  const bodyText = bodyMatch ? bodyMatch[0].slice(0, 150) : "";
+
+  // Build optimized prompt: character identity + cues + body + script
+  const parts = [
+    "9:16 vertical framing. Black crocodile mascot character (ZAG) speaking directly to camera on green screen.",
+    inlineCues,
+    bodyText,
+    scriptText ? `Speaking: "${scriptText}"` : "",
+  ].filter(Boolean);
+
+  return parts.join("\n").slice(0, 900);
 }

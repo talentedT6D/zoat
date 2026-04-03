@@ -247,7 +247,12 @@ export default function PromptForm({
                   <span className="text-[#f5f0ff]/10">({TOOLBAR_CATEGORIES.length} categories)</span>
                 </button>
                 {toolbarOpen && (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+                  <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                    <div className="flex items-center gap-3 mb-1 text-[8px] tracking-wide uppercase">
+                      <span className="text-[#4ade80]/40">Works</span>
+                      <span className="text-[#b87df5]/40">Influences</span>
+                      <span className="text-[#f5f0ff]/15">Hint</span>
+                    </div>
                     {TOOLBAR_CATEGORIES.map(({ category, label }) => {
                       const defs = REGISTRY_BY_CATEGORY.get(category) ?? [];
                       if (defs.length === 0) return null;
@@ -255,7 +260,7 @@ export default function PromptForm({
                         <div key={category} className="flex items-center gap-1 flex-wrap">
                           <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider w-14 shrink-0">{label}</span>
                           {defs.map((def) => (
-                            <AnnotationBtn key={def.tag} label={def.label}
+                            <AnnotationBtn key={def.tag} label={def.label} tier={def.tier}
                               onClick={() => insertAnnotation(def.tag, def.type === "wrapper")} />
                           ))}
                         </div>
@@ -520,10 +525,16 @@ function CustomPromptInput({ sectionKey, value, isOpen, onToggle, onChange, plac
   );
 }
 
-function AnnotationBtn({ label, onClick }: { label: string; onClick: () => void }) {
+function AnnotationBtn({ label, tier, onClick }: { label: string; tier?: "audio" | "strong" | "hint"; onClick: () => void }) {
+  const tierColor = tier === "audio"
+    ? "border-[#4ade80]/15 hover:border-[#4ade80]/30 hover:text-[#4ade80]"
+    : tier === "strong"
+      ? "border-[#b87df5]/15 hover:border-[#b87df5]/30 hover:text-[#b87df5]"
+      : "border-[#f5f0ff]/5 hover:border-[#f5f0ff]/15 hover:text-[#f5f0ff]/50";
   return (
     <button type="button" onClick={onClick}
-      className="px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium glass glass-hover text-[#f5f0ff]/30 hover:text-[#b87df5] transition-all cursor-pointer">
+      className={`px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium border bg-transparent text-[#f5f0ff]/25 transition-all cursor-pointer ${tierColor}`}
+      title={tier === "audio" ? "Directly affects audio" : tier === "strong" ? "Influences video" : "Prompt hint"}>
       {label}
     </button>
   );
