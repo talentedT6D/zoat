@@ -24,6 +24,19 @@ export interface ParsedScript {
 }
 
 /**
+ * Generate punctuation that creates a real pause in ElevenLabs TTS.
+ * Commas and periods create natural silence. ~3 commas ≈ 1s pause.
+ * Clamped to 10s max to avoid absurdly long pauses.
+ */
+function generatePauseText(seconds: number): string {
+  const clamped = Math.min(Math.max(seconds, 0.3), 10);
+  const units = Math.max(1, Math.round(clamped * 3));
+  // Pattern: "..., ..., ..., ..." — each comma-ellipsis adds ~0.3s
+  const chunks = Array(units).fill("...").join(", ");
+  return `, ${chunks}. `;
+}
+
+/**
  * Parse inline annotations from a raw script.
  * Data-driven from the annotation registry — supports any registered tag.
  * Supports optional duration syntax: [tag:2s], [tag:1.5s]
@@ -77,17 +90,18 @@ export function parseAnnotations(rawScript: string): ParsedScript {
     // Apply TTS effect then strip
     switch (def.ttsEffect) {
       case "ellipsis": {
-        // Use SSML break tag for real pauses in ElevenLabs
+        // Generate repeated punctuation for reliable pauses in ElevenLabs
+        // Each ". , " unit ≈ 0.3-0.5s pause. Scale by duration.
         ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
           const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 1);
-          return ` <break time="${dur}s"/> `;
+          return generatePauseText(dur);
         });
         break;
       }
       case "long-ellipsis": {
         ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
           const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 3);
-          return ` <break time="${dur}s"/> `;
+          return generatePauseText(dur);
         });
         break;
       }
@@ -97,8 +111,11 @@ export function parseAnnotations(rawScript: string): ParsedScript {
     }
   }
 
-  // 3. Clean up whitespace
-  ttsText = ttsText.replace(/\s{2,}/g, " ").trim();
+  // 3. Clean up whitespace — preserve ". " pause patterns
+  ttsText = ttsText
+    .replace(/[ \t]{2,}/g, " ")  // collapse spaces/tabs but not the ". " pattern
+    .replace(/\n{2,}/g, "\n")     // collapse newlines
+    .trim();
 
   // 4. Group cues by category
   const cuesByCategory: Partial<Record<AnnotationCategory, ParsedCue[]>> = {};
