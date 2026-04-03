@@ -316,9 +316,8 @@ export default function PromptForm({
                 {toolbarOpen && (
                   <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
                     <div className="flex items-center gap-3 mb-1 text-[8px] tracking-wide uppercase">
-                      <span className="text-[#4ade80]/40">Works</span>
-                      <span className="text-[#b87df5]/40">Influences</span>
-                      <span className="text-[#f5f0ff]/15">Hint</span>
+                      <span className="text-[#4ade80]/40">Changes Audio</span>
+                      <span className="text-[#b87df5]/40">Video Hint</span>
                     </div>
                     {TOOLBAR_CATEGORIES.map(({ category, label }) => {
                       const defs = REGISTRY_BY_CATEGORY.get(category) ?? [];

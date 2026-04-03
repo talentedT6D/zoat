@@ -179,14 +179,8 @@ export function buildAllDirections(
     pause: "Pauses",
     timing: "Timing",
     voice: "Delivery",
-    gesture: "Gestures",
-    emotion: "Emotion",
-    expression: "Expression",
-    gaze: "Eye Direction",
-    movement: "Body Movement",
-    camera: "Camera",
-    effect: "Effects",
-    transition: "Transitions",
+    gesture: "Movement",
+    emotion: "Mood",
   };
 
   const lines: string[] = [];
