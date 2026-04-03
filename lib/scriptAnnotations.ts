@@ -24,16 +24,16 @@ export interface ParsedScript {
 }
 
 /**
- * Generate punctuation that creates a real pause in ElevenLabs TTS.
- * Commas and periods create natural silence. ~3 commas ≈ 1s pause.
- * Clamped to 10s max to avoid absurdly long pauses.
+ * Generate text that creates a real pause in ElevenLabs TTS.
+ * A period followed by spaces creates natural sentence-break silence.
+ * Clamped to 10s max.
  */
 function generatePauseText(seconds: number): string {
   const clamped = Math.min(Math.max(seconds, 0.3), 10);
-  const units = Math.max(1, Math.round(clamped * 3));
-  // Pattern: "..., ..., ..., ..." — each comma-ellipsis adds ~0.3s
-  const chunks = Array(units).fill("...").join(", ");
-  return `, ${chunks}. `;
+  // Each ". " adds ~0.3-0.5s of natural sentence-break silence
+  // Using just periods and spaces — no commas or ellipsis that get vocalized
+  const units = Math.max(1, Math.round(clamped * 2));
+  return ". " + ".  ".repeat(units);
 }
 
 /**
@@ -59,17 +59,17 @@ export function parseAnnotations(rawScript: string): ParsedScript {
           // ALL CAPS + exclamation → ElevenLabs delivers louder/emphatic
           return content.toUpperCase().replace(/([.?])\s*$/g, "!") + "!";
         case "whisper":
-          // Lowercase + ellipsis wrapping + hyphens → breathy quiet delivery
-          return `... ${content.toLowerCase().trim().split(/\s+/).join(" ... ")} ...`;
+          // Lowercase → ElevenLabs delivers softer/quieter for lowercase text
+          return content.toLowerCase().trim();
         case "slow-speech":
-          // Heavy comma + ellipsis between words → dramatically slower pace
-          return content.trim().split(/\s+/).join(",... ");
+          // Commas between each word → ElevenLabs pauses naturally at commas
+          return content.trim().split(/\s+/).join(", ");
         case "fast-speech":
           // Strip ALL punctuation → ElevenLabs rushes through without pauses
           return content.replace(/[.,;:!?\-—–()]/g, " ").replace(/\s+/g, " ").trim();
         case "mumble":
-          // Lowercase + heavy periods → broken muffled delivery
-          return content.toLowerCase().trim().split(/\s+/).join("... ");
+          // Lowercase + commas → muffled broken delivery
+          return content.toLowerCase().trim().split(/\s+/).join(", ");
         case "passthrough":
           return content;
         default:
