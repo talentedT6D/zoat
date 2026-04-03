@@ -197,3 +197,33 @@ export function stripAllAnnotations(script: string): string {
   }
   return clean.replace(/\s{2,}/g, " ").trim();
 }
+
+/**
+ * Estimate video duration in seconds from a raw script.
+ * Based on average speaking rate (~150 words/min = 2.5 words/sec)
+ * plus explicit pause/timing annotation durations.
+ */
+export function estimateDuration(rawScript: string): number {
+  const clean = stripAllAnnotations(rawScript);
+
+  // Speech duration: ~2.5 words per second average
+  const wordCount = clean.split(/\s+/).filter(Boolean).length;
+  const speechSeconds = wordCount / 2.5;
+
+  // Add explicit pause/timing durations from annotations
+  let pauseSeconds = 0;
+  const pauseTimingTags = REGISTRY.filter(
+    (d) => d.type === "self-closing" && (d.category === "pause" || d.category === "timing")
+  );
+  for (const def of pauseTimingTags) {
+    const esc = escapeRegex(def.tag);
+    const regex = new RegExp(`\\[${esc}${DURATION_PATTERN}\\]`, "gi");
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(rawScript)) !== null) {
+      pauseSeconds += match[1] ? parseFloat(match[1]) : (def.defaultDuration ?? 1);
+    }
+  }
+
+  return Math.max(1, Math.round((speechSeconds + pauseSeconds) * 10) / 10);
+}
+

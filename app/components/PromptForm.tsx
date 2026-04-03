@@ -13,7 +13,7 @@ import type {
   GenerateRequest,
   CustomPrompts,
 } from "@/types";
-import { stripAllAnnotations } from "@/lib/scriptAnnotations";
+import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
@@ -103,12 +103,13 @@ export default function PromptForm({
       newText = script.slice(0, start) + openTag + script.slice(end);
       cursorPos = start + openTag.length;
     }
-    setScript(newText.slice(0, 2000));
+    setScript(newText.slice(0, 5000));
     setTimeout(() => { ta.focus(); ta.setSelectionRange(cursorPos, cursorPos); }, 0);
   }, [script]);
 
   const cleanLength = stripAllAnnotations(script).length;
   const hasAnnotations = cleanLength !== script.length;
+  const estDuration = script.trim() ? estimateDuration(script) : 0;
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -263,15 +264,19 @@ export default function PromptForm({
                   </div>
                 )}
               </div>
-              <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 2000))}
+              <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 5000))}
                 placeholder="Type your script... Use toolbar to add pauses, gestures, and voice cues"
-                className="w-full h-28 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
+                className="w-full h-32 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
               <div className="flex justify-between mt-1.5 px-1">
                 <span className="text-[10px] text-[#f5f0ff]/15">
-                  {hasAnnotations ? `${cleanLength} chars + annotations` : "Annotations supported"}
+                  {estDuration > 0
+                    ? `~${estDuration >= 60 ? `${Math.floor(estDuration / 60)}m ${Math.round(estDuration % 60)}s` : `${estDuration}s`} video`
+                    : hasAnnotations
+                      ? `${cleanLength} chars + annotations`
+                      : "Annotations supported"}
                 </span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 1900 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
-                  {cleanLength}/2000
+                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
+                  {cleanLength}/5000
                 </span>
               </div>
             </div>
