@@ -76,12 +76,21 @@ export function parseAnnotations(rawScript: string): ParsedScript {
 
     // Apply TTS effect then strip
     switch (def.ttsEffect) {
-      case "ellipsis":
-        ttsText = ttsText.replace(regex, "...");
+      case "ellipsis": {
+        // Use SSML break tag for real pauses in ElevenLabs
+        ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
+          const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 1);
+          return ` <break time="${dur}s"/> `;
+        });
         break;
-      case "long-ellipsis":
-        ttsText = ttsText.replace(regex, ". ...");
+      }
+      case "long-ellipsis": {
+        ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
+          const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 3);
+          return ` <break time="${dur}s"/> `;
+        });
         break;
+      }
       default:
         ttsText = ttsText.replace(regex, "");
         break;

@@ -18,6 +18,7 @@ const PRESET_CONFIG: Record<
 /**
  * Generate voice using ElevenLabs TTS API
  * Voice: Knightly (NGd6cAY3u3AiZhUL0IyV)
+ * Supports SSML <break> tags for timed pauses from annotations
  */
 export async function generateVoice(
   script: string,
@@ -33,6 +34,10 @@ export async function generateVoice(
   const similarity_boost = voiceTuning.similarity / 10;
   const style = preset.style;
 
+  // Wrap in SSML <speak> tags if the script contains break tags from annotations
+  const hasBreaks = script.includes("<break ");
+  const text = hasBreaks ? `<speak>${script}</speak>` : script;
+
   const res = await fetch(ELEVENLABS_API_URL, {
     method: "POST",
     headers: {
@@ -40,7 +45,7 @@ export async function generateVoice(
       "xi-api-key": apiKey,
     },
     body: JSON.stringify({
-      text: script,
+      text,
       model_id: "eleven_multilingual_v2",
       voice_settings: {
         stability,
