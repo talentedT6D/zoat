@@ -44,6 +44,24 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
         guidance_scale: 4.5, audio_guidance_scale: 2.5,
       });
 
+    case "omnihuman":
+      return callFal("fal-ai/bytedance/omnihuman/v1.5", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        turbo_mode: true,
+      });
+
+    case "wan-speech":
+      return callFal("fal-ai/wan/v2.2-14b/speech-to-video", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        resolution: "720p", guidance_scale: 3.5, num_inference_steps: 27,
+      });
+
+    case "infinitalk":
+      return callFal("fal-ai/infinitalk", {
+        image_url: imageUrl, audio_url: audioUrl, prompt: optimizedPrompt,
+        num_frames: 145, resolution: "720p",
+      });
+
     case "aurora":
     default:
       return callFal("fal-ai/creatify/aurora", {

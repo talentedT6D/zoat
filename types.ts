@@ -80,7 +80,7 @@ export interface HistoryEntry {
 }
 
 // === Avatar Model ===
-export type AvatarModel = "aurora" | "hedra" | "ai-avatar" | "kling" | "hunyuan" | "echomimic";
+export type AvatarModel = "aurora" | "hedra" | "ai-avatar" | "kling" | "hunyuan" | "echomimic" | "omnihuman" | "wan-speech" | "infinitalk";
 
 // === API ===
 export interface GenerateRequest {

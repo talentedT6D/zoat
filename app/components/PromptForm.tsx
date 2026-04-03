@@ -18,12 +18,18 @@ import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
 const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string }[] = [
-  { id: "aurora",    name: "Aurora",     desc: "Creatify lip-sync" },
-  { id: "hedra",     name: "Hedra",      desc: "Character animation" },
-  { id: "ai-avatar", name: "AI Avatar",  desc: "More frames, 720p" },
-  { id: "kling",     name: "Kling Pro",  desc: "Kling quality" },
-  { id: "hunyuan",   name: "Hunyuan",    desc: "Hunyuan animation" },
-  { id: "echomimic", name: "EchoMimic",  desc: "Expressive gestures" },
+  // Best for gestures/body movement
+  { id: "omnihuman",  name: "OmniHuman",  desc: "Best gestures + body" },
+  { id: "wan-speech",  name: "Wan 2.2",    desc: "Full body, 14B model" },
+  { id: "echomimic", name: "EchoMimic",  desc: "Upper body + hands" },
+  // General purpose
+  { id: "aurora",    name: "Aurora",     desc: "Reliable lip-sync" },
+  { id: "kling",     name: "Kling Pro",  desc: "High quality" },
+  { id: "hedra",     name: "Hedra",      desc: "Character style" },
+  // More options
+  { id: "ai-avatar", name: "AI Avatar",  desc: "145 frames, 720p" },
+  { id: "hunyuan",   name: "Hunyuan",    desc: "Tencent animation" },
+  { id: "infinitalk", name: "InfiniTalk", desc: "Long-form avatar" },
 ];
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
