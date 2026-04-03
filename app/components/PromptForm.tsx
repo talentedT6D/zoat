@@ -113,6 +113,8 @@ export default function PromptForm({
   const [toolbarOpen, setToolbarOpen] = useState(true);
   const [previewingAudio, setPreviewingAudio] = useState(false);
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -170,6 +172,7 @@ export default function PromptForm({
     if (previewingAudio || cleanLength === 0) return;
     setPreviewingAudio(true);
     setPreviewAudioUrl(null);
+    setAudioError(null);
     try {
       const res = await fetch("/api/preview-audio", {
         method: "POST",
@@ -179,12 +182,41 @@ export default function PromptForm({
       const data = await res.json();
       if (data.success && data.audioUrl) {
         setPreviewAudioUrl(data.audioUrl);
-        const audio = new Audio(data.audioUrl);
-        audio.play();
+        // Use ref-based audio element for reliable playback
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.src = data.audioUrl;
+        audioRef.current = audio;
+        try {
+          await audio.play();
+        } catch (playErr) {
+          console.warn("Audio play failed:", playErr);
+          // Fallback: user can click replay
+        }
+      } else {
+        setAudioError(data.error || "Audio generation failed");
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      setAudioError(err instanceof Error ? err.message : "Network error");
+    }
     setPreviewingAudio(false);
   }, [script, voicePreset, voiceTuning, previewingAudio, cleanLength]);
+
+  const replayAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    } else if (previewAudioUrl) {
+      const audio = new Audio();
+      audio.crossOrigin = "anonymous";
+      audio.src = previewAudioUrl;
+      audioRef.current = audio;
+      audio.play().catch(() => {});
+    }
+  }, [previewAudioUrl]);
 
   // Ctrl+Enter to generate
   useEffect(() => {
@@ -507,8 +539,11 @@ export default function PromptForm({
                 </>
               )}
             </button>
+            {audioError && (
+              <span className="text-[9px] text-[#ff6900]/50">{audioError}</span>
+            )}
             {previewAudioUrl && (
-              <button onClick={() => new Audio(previewAudioUrl).play()}
+              <button onClick={replayAudio}
                 className="w-8 h-8 rounded-lg border border-[#9b51e0]/10 flex items-center justify-center text-[#b87df5]/50 hover:text-[#b87df5] transition-colors cursor-pointer"
                 title="Replay audio">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>

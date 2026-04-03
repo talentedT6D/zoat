@@ -56,19 +56,20 @@ export function parseAnnotations(rawScript: string): ParsedScript {
       cues.push({ def, text: content.trim(), duration });
       switch (def.ttsEffect) {
         case "uppercase":
-          return content.toUpperCase();
+          // ALL CAPS + exclamation → ElevenLabs delivers louder/emphatic
+          return content.toUpperCase().replace(/([.?])\s*$/g, "!") + "!";
         case "whisper":
-          // Lowercase + wrap in soft punctuation → ElevenLabs speaks softer/breathier
-          return `...${content.toLowerCase().trim()}...`;
+          // Lowercase + ellipsis wrapping + hyphens → breathy quiet delivery
+          return `... ${content.toLowerCase().trim().split(/\s+/).join(" ... ")} ...`;
         case "slow-speech":
-          // Insert commas between words → ElevenLabs pauses between each word
-          return content.trim().split(/\s+/).join(", ");
+          // Heavy comma + ellipsis between words → dramatically slower pace
+          return content.trim().split(/\s+/).join(",... ");
         case "fast-speech":
-          // Strip punctuation and compress → ElevenLabs speeds through
-          return content.replace(/[.,;:!?—–-]/g, "").trim();
+          // Strip ALL punctuation → ElevenLabs rushes through without pauses
+          return content.replace(/[.,;:!?\-—–()]/g, " ").replace(/\s+/g, " ").trim();
         case "mumble":
-          // Lowercase + periods between words → muffled delivery
-          return content.toLowerCase().trim().split(/\s+/).join(". ");
+          // Lowercase + heavy periods → broken muffled delivery
+          return content.toLowerCase().trim().split(/\s+/).join("... ");
         case "passthrough":
           return content;
         default:
