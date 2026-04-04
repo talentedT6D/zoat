@@ -15,8 +15,14 @@ export interface ParsedCue {
   duration?: number;   // seconds, from :Ns suffix
 }
 
+export type VoiceOverride = {
+  stability?: number;
+  similarity_boost?: number;
+  style?: number;
+};
+
 export type AudioSegment =
-  | { type: "speech"; text: string }
+  | { type: "speech"; text: string; voiceOverride?: VoiceOverride }
   | { type: "silence"; seconds: number };
 
 export interface ParsedScript {
@@ -36,20 +42,47 @@ function generatePauseText(seconds: number): string {
   return `${PAUSE_TOKEN}${seconds}${PAUSE_TOKEN_END}`;
 }
 
+/** Voice override presets for different delivery styles */
+const VOICE_OVERRIDES: Record<string, VoiceOverride> = {
+  loud:    { stability: 0.15, similarity_boost: 0.4, style: 0.9 },   // aggressive, expressive
+  whisper: { stability: 0.85, similarity_boost: 0.9, style: 0.05 },  // very stable, minimal style = quieter
+  slow:    { stability: 0.9, similarity_boost: 0.8, style: 0.1 },    // very stable = slower delivery
+  mumble:  { stability: 0.2, similarity_boost: 0.3, style: 0.4 },    // unstable, low similarity = mumbled
+};
+
 /**
- * Split ttsText into segments of speech and silence.
- * Pause tokens like <<PAUSE:6>> become silence segments.
+ * Split ttsText into segments of speech, silence, and voice-modified speech.
+ * Pause tokens <<PAUSE:6>> become silence segments.
+ * Voice tokens <<VOICE:whisper>>text<<ENDVOICE>> become speech with voice overrides.
  */
 export function splitIntoSegments(ttsText: string): AudioSegment[] {
   const segments: AudioSegment[] = [];
-  const regex = /<<PAUSE:([\d.]+)>>/g;
+  // Match both pause and voice tokens
+  const regex = /<<PAUSE:([\d.]+)>>|<<VOICE:(\w+)>>(.*?)<<ENDVOICE>>/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(ttsText)) !== null) {
+    // Add any plain text before this token
     const before = ttsText.slice(lastIndex, match.index).trim();
     if (before) segments.push({ type: "speech", text: before });
-    segments.push({ type: "silence", seconds: parseFloat(match[1]) });
+
+    if (match[1]) {
+      // Pause token
+      segments.push({ type: "silence", seconds: parseFloat(match[1]) });
+    } else if (match[2] && match[3]) {
+      // Voice token
+      const voiceType = match[2];
+      const text = match[3].trim();
+      if (text) {
+        segments.push({
+          type: "speech",
+          text,
+          voiceOverride: VOICE_OVERRIDES[voiceType],
+        });
+      }
+    }
+
     lastIndex = match.index + match[0].length;
   }
 
@@ -79,20 +112,15 @@ export function parseAnnotations(rawScript: string): ParsedScript {
       cues.push({ def, text: content.trim(), duration });
       switch (def.ttsEffect) {
         case "uppercase":
-          // ALL CAPS + exclamation → ElevenLabs delivers louder/emphatic
-          return content.toUpperCase().replace(/([.?])\s*$/g, "!") + "!";
+          return `<<VOICE:loud>>${content.toUpperCase()}<<ENDVOICE>>`;
         case "whisper":
-          // Lowercase → ElevenLabs delivers softer/quieter for lowercase text
-          return content.toLowerCase().trim();
+          return `<<VOICE:whisper>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
         case "slow-speech":
-          // Commas between each word → ElevenLabs pauses naturally at commas
-          return content.trim().split(/\s+/).join(", ");
+          return `<<VOICE:slow>>${content.trim()}<<ENDVOICE>>`;
         case "fast-speech":
-          // Strip ALL punctuation → ElevenLabs rushes through without pauses
           return content.replace(/[.,;:!?\-—–()]/g, " ").replace(/\s+/g, " ").trim();
         case "mumble":
-          // Lowercase + commas → muffled broken delivery
-          return content.toLowerCase().trim().split(/\s+/).join(", ");
+          return `<<VOICE:mumble>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
         case "passthrough":
           return content;
         default:
@@ -161,7 +189,7 @@ export function parseAnnotations(rawScript: string): ParsedScript {
   }
 
   // 5. Build legacy direction strings (backward compat)
-  const gestureDirections = buildCategoryDirections(cuesByCategory["gesture"]);
+  const gestureDirections = "";
   const toneDirections = buildWrapperDirections(cuesByCategory["voice"]);
 
   // 6. Clean script for display/char counting
@@ -204,8 +232,6 @@ export function buildAllDirections(
     pause: "Pauses",
     timing: "Timing",
     voice: "Delivery",
-    gesture: "Movement",
-    emotion: "Mood",
   };
 
   const lines: string[] = [];

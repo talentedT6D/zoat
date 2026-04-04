@@ -22,9 +22,7 @@ export type TtsEffect =
 export type AnnotationCategory =
   | "pause"
   | "timing"
-  | "voice"
-  | "gesture"
-  | "emotion";
+  | "voice";
 
 export interface AnnotationDef {
   tag: string;
@@ -69,27 +67,6 @@ export const REGISTRY: AnnotationDef[] = [
   { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",    ttsEffect: "mumble",       promptEffect: "mumbles under breath",         durationAllowed: true, tier: "audio" },
   { tag: "spell",    type: "wrapper", category: "voice", label: "Spell Out", ttsEffect: "slow-speech",  promptEffect: "spells out each word clearly",  durationAllowed: true, tier: "audio" },
 
-  // ═══════════════════════════════════════════════════════════
-  // VIDEO TIER — prompt hints that influence avatar animation
-  // The lip-sync model may respond to these in overall energy/movement
-  // ═══════════════════════════════════════════════════════════
-
-  // ── Energy / Movement Style (affects overall animation energy) ──
-  { tag: "energetic",  type: "self-closing", category: "gesture", label: "Energetic",  ttsEffect: "none", promptEffect: "high energy animated movement",       positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "calm",       type: "self-closing", category: "gesture", label: "Calm",       ttsEffect: "none", promptEffect: "calm minimal movement",               positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "nod",        type: "self-closing", category: "gesture", label: "Nod",        ttsEffect: "none", promptEffect: "nods head",                           positionAware: true, durationAllowed: true, defaultDuration: 1, tier: "strong" },
-  { tag: "head-tilt",  type: "self-closing", category: "gesture", label: "Head Tilt",  ttsEffect: "none", promptEffect: "tilts head to the side",              positionAware: true, durationAllowed: true, defaultDuration: 1, tier: "strong" },
-  { tag: "lean-in",    type: "self-closing", category: "gesture", label: "Lean In",    ttsEffect: "none", promptEffect: "leans toward camera",                 positionAware: true, durationAllowed: true, defaultDuration: 2, tier: "strong" },
-  { tag: "lean-back",  type: "self-closing", category: "gesture", label: "Lean Back",  ttsEffect: "none", promptEffect: "leans back from camera",              positionAware: true, durationAllowed: true, defaultDuration: 2, tier: "strong" },
-  { tag: "still",      type: "self-closing", category: "gesture", label: "Still",      ttsEffect: "none", promptEffect: "completely still and frozen",          positionAware: true, durationAllowed: true, defaultDuration: 2, tier: "strong" },
-
-  // ── Mood (affects overall expression/energy in the animation) ──
-  { tag: "happy",     type: "self-closing", category: "emotion", label: "Happy",     ttsEffect: "none", promptEffect: "happy upbeat energy",         positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "sad",       type: "self-closing", category: "emotion", label: "Sad",       ttsEffect: "none", promptEffect: "sad low energy",              positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "angry",     type: "self-closing", category: "emotion", label: "Angry",     ttsEffect: "none", promptEffect: "angry aggressive energy",     positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "excited",   type: "self-closing", category: "emotion", label: "Excited",   ttsEffect: "none", promptEffect: "excited high energy",         positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "confused",  type: "self-closing", category: "emotion", label: "Confused",  ttsEffect: "none", promptEffect: "confused uncertain energy",   positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
-  { tag: "serious",   type: "self-closing", category: "emotion", label: "Serious",   ttsEffect: "none", promptEffect: "serious intense energy",      positionAware: true, durationAllowed: true, defaultDuration: 3, tier: "strong" },
 ];
 
 // ── Derived Lookups ──
@@ -114,8 +91,6 @@ export const TOOLBAR_CATEGORIES: { category: AnnotationCategory; label: string }
   { category: "pause",      label: "Pause" },
   { category: "timing",     label: "Timing" },
   { category: "voice",      label: "Voice" },
-  { category: "gesture",    label: "Movement" },
-  { category: "emotion",    label: "Mood" },
 ];
 
 // ── Helpers ──

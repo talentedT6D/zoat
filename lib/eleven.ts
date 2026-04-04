@@ -1,5 +1,5 @@
 import type { VoicePreset, VoiceTuning } from "@/types";
-import type { AudioSegment } from "@/lib/scriptAnnotations";
+import type { AudioSegment, VoiceOverride } from "@/lib/scriptAnnotations";
 
 const ELEVENLABS_VOICE_ID = "NGd6cAY3u3AiZhUL0IyV";
 
@@ -54,7 +54,14 @@ export async function generateVoice(
       const numSamples = Math.round(sampleRate * clamped);
       pcmChunks.push(new Int16Array(numSamples)); // zeros = silence
     } else if (seg.text.trim()) {
-      const pcmBuffer = await callElevenLabsPcm(seg.text, apiKey, stability, similarity_boost, style, preset.use_speaker_boost);
+      const vo: VoiceOverride | undefined = seg.type === "speech" ? seg.voiceOverride : undefined;
+      const pcmBuffer = await callElevenLabsPcm(
+        seg.text, apiKey,
+        vo?.stability ?? stability,
+        vo?.similarity_boost ?? similarity_boost,
+        vo?.style ?? style,
+        preset.use_speaker_boost
+      );
       pcmChunks.push(new Int16Array(pcmBuffer));
     }
   }
