@@ -18,15 +18,15 @@ import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
 const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string; features: string; maxSec: number }[] = [
-  { id: "omnihuman",  name: "OmniHuman",   features: "Full body + hands + gestures, turbo mode",  desc: "Up to 60s", maxSec: 60 },
-  { id: "wan-speech", name: "Wan 2.2",     features: "14B model, negative prompt, 720p",          desc: "Up to 15s", maxSec: 15 },
-  { id: "echomimic",  name: "EchoMimic",   features: "Upper body + hands, dual guidance control", desc: "Up to 15s", maxSec: 15 },
-  { id: "aurora",     name: "Aurora",      features: "Lip-sync, long audio, prompt guided",       desc: "Up to 2min", maxSec: 120 },
-  { id: "kling",      name: "Kling Pro",   features: "High quality, natural body movement",       desc: "Up to 60s", maxSec: 60 },
-  { id: "hedra",      name: "Hedra",       features: "Prompt-driven character animation",         desc: "Up to 30s", maxSec: 30 },
-  { id: "ai-avatar",  name: "AI Avatar",   features: "145 frames, 720p, fast render",             desc: "Up to 6s",  maxSec: 6 },
-  { id: "hunyuan",    name: "Hunyuan",     features: "Tencent model, turbo mode, body animation", desc: "Up to 15s", maxSec: 15 },
-  { id: "infinitalk", name: "InfiniTalk",  features: "Long-form, 145 frames, 720p",               desc: "Up to 30s", maxSec: 30 },
+  { id: "ai-avatar",  name: "AI Avatar",   features: "Fastest, 480p, high acceleration",           desc: "~30s render", maxSec: 6 },
+  { id: "aurora",     name: "Aurora",      features: "Fast lip-sync, long audio, 720p",            desc: "~60s render", maxSec: 120 },
+  { id: "hunyuan",    name: "Hunyuan",     features: "Turbo mode, body animation, fast",           desc: "~45s render", maxSec: 15 },
+  { id: "hedra",      name: "Hedra",       features: "Prompt-driven character animation",          desc: "~90s render", maxSec: 30 },
+  { id: "echomimic",  name: "EchoMimic",   features: "Upper body + hands, dual guidance",          desc: "~90s render", maxSec: 15 },
+  { id: "infinitalk", name: "InfiniTalk",  features: "480p, high acceleration, long-form",         desc: "~60s render", maxSec: 30 },
+  { id: "omnihuman",  name: "OmniHuman",   features: "Full body + hands + gestures, turbo",        desc: "~120s render", maxSec: 60 },
+  { id: "kling",      name: "Kling",       features: "Standard quality, natural movement",         desc: "~90s render", maxSec: 60 },
+  { id: "wan-speech", name: "Wan 2.2",     features: "14B model, 480p fast, negative prompt",      desc: "~120s render", maxSec: 15 },
 ];
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [

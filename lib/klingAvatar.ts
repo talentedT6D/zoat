@@ -14,8 +14,9 @@ interface AvatarParams {
 export async function generateAvatar(params: AvatarParams): Promise<string> {
   const { imageUrl, audioUrl, videoPrompt, negativePrompt, model = "aurora" } = params;
 
-  const prompt = `9:16 vertical. ${videoPrompt}`.slice(0, 900);
-  const neg = negativePrompt || "blurry, deformed, static, bad quality, distortion";
+  // Keep prompt short — shorter prompts = faster processing
+  const prompt = `9:16 vertical. ${videoPrompt}`.slice(0, 500);
+  const neg = negativePrompt || "blurry, deformed, static, bad quality";
 
   switch (model) {
     case "hedra":
@@ -26,25 +27,30 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
     case "ai-avatar":
       return callFal("fal-ai/ai-avatar", {
         image_url: imageUrl, audio_url: audioUrl, prompt,
-        num_frames: 145, resolution: "720p",
+        num_frames: 81,        // minimum frames = fastest render
+        resolution: "480p",    // 480p is 2x faster than 720p
+        acceleration: "high",  // max acceleration
       });
 
     case "kling":
-      return callFal("fal-ai/kling-video/v1/pro/ai-avatar", {
+      return callFal("fal-ai/kling-video/v1/standard/ai-avatar", {  // standard is faster than pro
         image_url: imageUrl, audio_url: audioUrl, prompt,
       });
 
     case "hunyuan":
       return callFal("fal-ai/hunyuan-avatar", {
         image_url: imageUrl, audio_url: audioUrl, text: prompt,
-        num_inference_steps: 30,
+        num_inference_steps: 15,  // 15 instead of 30 = 2x faster
+        turbo_mode: true,
       });
 
     case "echomimic":
       return callFal("fal-ai/echomimic-v3", {
         image_url: imageUrl, audio_url: audioUrl, prompt,
         negative_prompt: neg,
-        guidance_scale: 4.5, audio_guidance_scale: 2.5,
+        guidance_scale: 3.5,        // lower = faster
+        audio_guidance_scale: 2.0,
+        num_frames_per_generation: 81,  // minimum frames
       });
 
     case "omnihuman":
@@ -57,20 +63,24 @@ export async function generateAvatar(params: AvatarParams): Promise<string> {
       return callFal("fal-ai/wan/v2.2-14b/speech-to-video", {
         image_url: imageUrl, audio_url: audioUrl, prompt,
         negative_prompt: neg,
-        resolution: "720p", guidance_scale: 3.5, num_inference_steps: 27,
+        resolution: "480p",           // 480p instead of 720p = much faster
+        guidance_scale: 3.0,
+        num_inference_steps: 15,      // 15 instead of 27 = ~2x faster
       });
 
     case "infinitalk":
       return callFal("fal-ai/infinitalk", {
         image_url: imageUrl, audio_url: audioUrl, prompt,
-        num_frames: 145, resolution: "720p",
+        num_frames: 81,
+        resolution: "480p",
+        acceleration: "high",
       });
 
     case "aurora":
     default:
       return callFal("fal-ai/creatify/aurora", {
         image_url: imageUrl, audio_url: audioUrl, prompt,
-        guidance_scale: 2, audio_guidance_scale: 2, resolution: "720p",
+        guidance_scale: 1.5, audio_guidance_scale: 2, resolution: "720p",
       });
   }
 }
@@ -79,7 +89,7 @@ async function callFal(endpoint: string, input: Record<string, unknown>): Promis
   try {
     const result = await fal.subscribe(endpoint as Parameters<typeof fal.subscribe>[0], {
       input,
-      pollInterval: 3000,
+      pollInterval: 2000,     // check every 2s instead of 3s
       timeout: 600_000,
     });
     const data = result.data as Record<string, unknown>;
