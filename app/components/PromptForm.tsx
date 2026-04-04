@@ -70,6 +70,8 @@ export default function PromptForm({
     stability: 7, similarity: 6, speed: 1.0, pitch: 0, exaggeration: 0.3, cfg: 0.5,
   });
   const [avatarModel, setAvatarModel] = useState<AvatarModel>("aurora");
+  const [videoPrompt, setVideoPrompt] = useState("Character speaking to camera with natural movement and hand gestures");
+  const [negativePrompt, setNegativePrompt] = useState("");
   const [bodyMovement, setBodyMovement] = useState<BodyMovement>({
     neck: 3, hands: 3, body: 2,
   });
@@ -84,12 +86,6 @@ export default function PromptForm({
   const [uploading, setUploading] = useState<"image" | "audio" | null>(null);
 
 
-  const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({});
-  const [openCustom, setOpenCustom] = useState<Record<string, boolean>>({});
-
-  const toggleCustom = (key: string) => setOpenCustom((p) => ({ ...p, [key]: !p[key] }));
-  const setCustom = (key: keyof CustomPrompts, value: string) =>
-    setCustomPrompts((p) => ({ ...p, [key]: value || undefined }));
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -178,20 +174,15 @@ export default function PromptForm({
     if (voiceMode === "tts" && cleanLength === 0) return;
     if (voiceMode === "upload" && !uploadedAudioUrl) return;
 
-    const activeCustom: CustomPrompts = {};
-    if (customPrompts.gesture?.trim()) activeCustom.gesture = customPrompts.gesture.trim();
-    if (customPrompts.costume?.trim()) activeCustom.costume = customPrompts.costume.trim();
-    if (customPrompts.voice?.trim()) activeCustom.voice = customPrompts.voice.trim();
-    if (customPrompts.mouth?.trim()) activeCustom.mouth = customPrompts.mouth.trim();
-
     onGenerate({
       script: script.trim(), gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning,
       voiceMode, baseImageUrl, avatarModel,
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
       audioUrl: voiceMode === "tts" && generatedAudioUrl ? generatedAudioUrl : undefined,
-      customPrompts: Object.keys(activeCustom).length > 0 ? activeCustom : undefined,
+      videoPrompt: videoPrompt.trim() || undefined,
+      negativePrompt: negativePrompt.trim() || undefined,
     });
-  }, [isGenerating, baseImageUrl, voiceMode, uploadedAudioUrl, customPrompts, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, avatarModel, generatedAudioUrl]);
+  }, [isGenerating, baseImageUrl, voiceMode, uploadedAudioUrl, onGenerate, script, gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning, avatarModel, generatedAudioUrl, videoPrompt, negativePrompt]);
 
   const canGenerate = baseImageUrl && !isGenerating &&
     (voiceMode === "upload" ? !!uploadedAudioUrl : !!generatedAudioUrl);
@@ -528,61 +519,28 @@ export default function PromptForm({
             <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Video</span>
           </div>
 
-          {/* Video settings — collapsed by default */}
-          <details className="mb-2">
-            <summary className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider cursor-pointer hover:text-[#f5f0ff]/25 transition-colors list-none flex items-center gap-1.5">
-              <svg className="w-3 h-3 transition-transform details-open-rotate" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-              Video Settings
-            </summary>
-            <div className="mt-2 space-y-3 pl-1">
-              {/* Gesture */}
-              <div>
-                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Gesture</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(["A", "B"] as GestureMode[]).map((mode) => (
-                    <button key={mode} onClick={() => setGestureMode(mode)}
-                      className={`py-2 px-3 rounded-lg text-left transition-all cursor-pointer ${
-                        gestureMode === mode ? "bg-[#9b51e0]/10 border border-[#9b51e0]/18" : "bg-[#f5f0ff]/[0.02] border border-transparent"
-                      }`}>
-                      <span className={`text-[10px] font-medium block ${gestureMode === mode ? "text-[#b87df5]" : "text-[#f5f0ff]/30"}`}>
-                        Type {mode} — {mode === "A" ? "Static" : "Subtle motion"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Costume */}
-              <div>
-                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Costume</span>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {COSTUMES.map((c) => (
-                    <button key={c.id} onClick={() => setCostume(c.id)}
-                      className={`py-1.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer ${
-                        costume === c.id ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/18" : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/25 border border-transparent"
-                      }`}>
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Body Movement */}
-              <div>
-                <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Body Movement</span>
-                <div className="space-y-2">
-                  <Slider label="Neck" value={bodyMovement.neck} min={0} max={10} step={1}
-                    formatValue={(v) => v <= 2 ? "Locked" : v <= 5 ? "Slight" : v <= 8 ? "Moderate" : "Full"}
-                    onChange={(v) => setBodyMovement((p) => ({ ...p, neck: v }))} />
-                  <Slider label="Hands" value={bodyMovement.hands} min={0} max={10} step={1}
-                    formatValue={(v) => v <= 2 ? "None" : v <= 5 ? "Subtle" : v <= 8 ? "Moderate" : "Expressive"}
-                    onChange={(v) => setBodyMovement((p) => ({ ...p, hands: v }))} />
-                  <Slider label="Body" value={bodyMovement.body} min={0} max={10} step={1}
-                    formatValue={(v) => v <= 2 ? "Statue" : v <= 5 ? "Minimal" : v <= 8 ? "Moderate" : "Dynamic"}
-                    onChange={(v) => setBodyMovement((p) => ({ ...p, body: v }))} />
-                </div>
-              </div>
+          {/* Video prompt */}
+          <div className="mb-2.5">
+            <textarea value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value.slice(0, 500))}
+              placeholder="Describe the video style... e.g. 'Energetic talking with hand gestures, expressive body movement, looking at camera'"
+              className="w-full h-16 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
+            <div className="flex justify-between mt-1 px-1">
+              <span className="text-[9px] text-[#f5f0ff]/12">Describes how the character moves and acts</span>
+              <span className="text-[9px] text-[#f5f0ff]/10 font-[family-name:var(--font-mono)]">{videoPrompt.length}/500</span>
             </div>
+          </div>
+
+          {/* Negative prompt (collapsible) */}
+          <details className="mb-2.5">
+            <summary className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider cursor-pointer hover:text-[#f5f0ff]/25 transition-colors list-none flex items-center gap-1.5 mb-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Negative Prompt
+            </summary>
+            <textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value.slice(0, 300))}
+              placeholder="What to avoid... e.g. 'blurry, deformed face, static, no movement, bad quality'"
+              className="w-full h-14 bg-[#ff6900]/[0.02] border border-[#ff6900]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[#ff6900]/15 transition-colors leading-relaxed" />
           </details>
 
           {/* Model selector */}
@@ -671,30 +629,7 @@ function Slider({ label, value, min, max, step, formatValue, onChange }: {
   );
 }
 
-function CustomPromptInput({ sectionKey, value, isOpen, onToggle, onChange, placeholder }: {
-  sectionKey: string; value: string; isOpen: boolean; onToggle: () => void;
-  onChange: (v: string) => void; placeholder: string;
-}) {
-  return (
-    <div className="mt-2">
-      <button onClick={onToggle}
-        className="flex items-center gap-1.5 text-[10px] text-[#f5f0ff]/18 hover:text-[#9b51e0]/60 transition-colors cursor-pointer group">
-        <svg className={`w-3 h-3 transition-transform ${isOpen ? "rotate-45" : ""} ${value ? "text-[#9b51e0]/50" : ""}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        <span className={value ? "text-[#9b51e0]/50" : ""}>{value ? "Custom prompt active" : "Custom prompt"}</span>
-      </button>
-      {isOpen && (
-        <div className="mt-2 animate-fade-in">
-          <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-            className="w-full h-16 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-lg p-2.5 text-[11px] font-[family-name:var(--font-mono)] text-[#f5f0ff]/60 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[#9b51e0]/20 transition-colors leading-relaxed" />
-          {value && <p className="text-[9px] text-[#9b51e0]/40 mt-1 px-0.5">Overrides preset — your prompt will be used instead</p>}
-        </div>
-      )}
-    </div>
-  );
-}
+
 
 function AnnotationBtn({ label, tier, onClick }: { label: string; tier?: "audio" | "strong" | "hint"; onClick: () => void }) {
   const tierColor = tier === "audio"

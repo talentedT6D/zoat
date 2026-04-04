@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { GenerateRequest } from "@/types";
-import { compilePrompt, getAnimationConfig } from "@/lib/promptCompiler";
 import { generateVoice } from "@/lib/eleven";
 import { generateAvatar } from "@/lib/klingAvatar";
 import { parseAnnotations } from "@/lib/scriptAnnotations";
@@ -77,40 +76,29 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     throw new Error("Script must contain spoken text, not just annotations");
   }
 
-  const prompt = compilePrompt({
-    script: parsed.cleanScript,
-    gestureMode,
-    costume,
-    mouth,
-    bodyMovement: bodyMovement || { neck: 3, hands: 3, body: 2 },
-    voicePreset,
-    voiceTuning,
-    customPrompts,
-    annotationDirections: {
-      gestures: parsed.gestureDirections,
-      tone: parsed.toneDirections,
-      cuesByCategory: parsed.cuesByCategory,
-    },
-  });
+  // Build video prompt from user input + annotation cues
+  const { buildAllDirections } = await import("@/lib/scriptAnnotations");
+  const annotationCues = buildAllDirections(parsed.cuesByCategory);
+  const videoPrompt = [
+    params.videoPrompt || "Character speaking to camera with natural movement",
+    annotationCues,
+    `Speaking: "${parsed.cleanScript.slice(0, 200)}"`,
+  ].filter(Boolean).join("\n");
 
   let audioUrl: string;
   if (voiceMode === "upload" && uploadedAudioUrl) {
     audioUrl = uploadedAudioUrl;
   } else if (params.audioUrl) {
-    // Pre-baked audio from Step 1 (two-step workflow) — skip TTS
     audioUrl = params.audioUrl;
   } else {
-    // Fallback: generate TTS fresh
     audioUrl = await generateVoice(parsed.ttsText, voicePreset, voiceTuning);
   }
-
-  const animation = getAnimationConfig(gestureMode, bodyMovement || { neck: 3, hands: 3, body: 2 });
 
   const videoUrl = await generateAvatar({
     imageUrl: baseImageUrl,
     audioUrl,
-    prompt,
-    animation,
+    videoPrompt,
+    negativePrompt: params.negativePrompt,
     model: params.avatarModel,
   });
 
