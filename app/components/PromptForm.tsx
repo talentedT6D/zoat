@@ -17,19 +17,16 @@ import type {
 import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
-const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string; maxSec: number }[] = [
-  // Best for gestures/body movement
-  { id: "omnihuman",  name: "OmniHuman",  desc: "Best gestures + body", maxSec: 60 },
-  { id: "wan-speech",  name: "Wan 2.2",    desc: "Full body, 14B model", maxSec: 15 },
-  { id: "echomimic", name: "EchoMimic",  desc: "Upper body + hands", maxSec: 15 },
-  // General purpose
-  { id: "aurora",    name: "Aurora",     desc: "Reliable lip-sync", maxSec: 120 },
-  { id: "kling",     name: "Kling Pro",  desc: "High quality", maxSec: 60 },
-  { id: "hedra",     name: "Hedra",      desc: "Character style", maxSec: 30 },
-  // More options
-  { id: "ai-avatar", name: "AI Avatar",  desc: "Max ~6s, 720p", maxSec: 6 },
-  { id: "hunyuan",   name: "Hunyuan",    desc: "Tencent animation", maxSec: 15 },
-  { id: "infinitalk", name: "InfiniTalk", desc: "Long-form avatar", maxSec: 30 },
+const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string; features: string; maxSec: number }[] = [
+  { id: "omnihuman",  name: "OmniHuman",   features: "Full body + hands + gestures, turbo mode",  desc: "Up to 60s", maxSec: 60 },
+  { id: "wan-speech", name: "Wan 2.2",     features: "14B model, negative prompt, 720p",          desc: "Up to 15s", maxSec: 15 },
+  { id: "echomimic",  name: "EchoMimic",   features: "Upper body + hands, dual guidance control", desc: "Up to 15s", maxSec: 15 },
+  { id: "aurora",     name: "Aurora",      features: "Lip-sync, long audio, prompt guided",       desc: "Up to 2min", maxSec: 120 },
+  { id: "kling",      name: "Kling Pro",   features: "High quality, natural body movement",       desc: "Up to 60s", maxSec: 60 },
+  { id: "hedra",      name: "Hedra",       features: "Prompt-driven character animation",         desc: "Up to 30s", maxSec: 30 },
+  { id: "ai-avatar",  name: "AI Avatar",   features: "145 frames, 720p, fast render",             desc: "Up to 6s",  maxSec: 6 },
+  { id: "hunyuan",    name: "Hunyuan",     features: "Tencent model, turbo mode, body animation", desc: "Up to 15s", maxSec: 15 },
+  { id: "infinitalk", name: "InfiniTalk",  features: "Long-form, 145 frames, 720p",               desc: "Up to 30s", maxSec: 30 },
 ];
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
@@ -547,11 +544,12 @@ export default function PromptForm({
 
           {/* Model selector */}
           <div className="grid grid-cols-3 gap-1.5 mb-2">
-            {MODEL_OPTIONS.map(({ id, name, desc, maxSec }) => {
+            {MODEL_OPTIONS.map(({ id, name, features, desc, maxSec }) => {
               const tooLong = audioDuration != null && audioDuration > maxSec;
               return (
                 <button key={id} onClick={() => setAvatarModel(id)}
-                  className={`py-2 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                  title={features}
+                  className={`py-2.5 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
                     avatarModel === id
                       ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
                       : tooLong
@@ -560,9 +558,14 @@ export default function PromptForm({
                   }`}>
                   <div className="text-[10px] font-[family-name:var(--font-body)] font-medium">{name}</div>
                   <div className={`text-[7px] mt-0.5 leading-tight ${
-                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]/50" : "text-[#f5f0ff]/10"
+                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]/40" : "text-[#f5f0ff]/8"
                   }`}>
-                    {tooLong ? `Max ${maxSec}s` : desc}
+                    {tooLong ? `Audio too long` : features}
+                  </div>
+                  <div className={`text-[7px] mt-0.5 ${
+                    tooLong ? "text-[#ff6900]/30" : avatarModel === id ? "text-[#b87df5]/25" : "text-[#f5f0ff]/8"
+                  }`}>
+                    {desc}
                   </div>
                 </button>
               );
