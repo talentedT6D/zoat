@@ -70,7 +70,7 @@ export default function PromptForm({
     stability: 7, similarity: 6, speed: 1.0, pitch: 0, exaggeration: 0.3, cfg: 0.5,
   });
   const [avatarModel, setAvatarModel] = useState<AvatarModel>("aurora");
-  const [videoPrompt, setVideoPrompt] = useState("Black crocodile mascot character speaking directly to camera with natural hand gestures, expressive body movement, energetic delivery, green screen background");
+  const [videoPrompt, setVideoPrompt] = useState("Black crocodile mascot character speaking directly to camera with natural hand gestures, expressive body movement, energetic delivery");
   const [negativePrompt, setNegativePrompt] = useState("blurry, deformed face, static, no movement, bad quality, distortion, low resolution, text, watermark");
   const [bodyMovement, setBodyMovement] = useState<BodyMovement>({
     neck: 3, hands: 3, body: 2,
