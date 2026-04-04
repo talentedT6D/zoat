@@ -19,6 +19,7 @@ export type VoiceOverride = {
   stability?: number;
   similarity_boost?: number;
   style?: number;
+  volumeDb?: number; // actual volume change in dB applied to PCM samples
 };
 
 export type AudioSegment =
@@ -52,17 +53,24 @@ function scaleVoiceOverride(type: string, intensity: number): VoiceOverride {
 
   switch (type) {
     case "loud":
-      // Lower stability + higher style = more aggressive/expressive
-      return { stability: 0.7 - (t * 0.6), similarity_boost: 0.5 - (t * 0.2), style: 0.3 + (t * 0.7) };
+      // Boost volume + more expressive delivery
+      return {
+        stability: 0.7 - (t * 0.4), style: 0.3 + (t * 0.5),
+        volumeDb: t * 20,  // +2dB to +20dB actual volume boost
+      };
     case "whisper":
-      // Higher stability + lower style = softer/quieter
-      return { stability: 0.5 + (t * 0.45), similarity_boost: 0.5 + (t * 0.45), style: 0.3 - (t * 0.28) };
+      // Reduce volume + stable quiet delivery
+      return {
+        stability: 0.5 + (t * 0.4), style: 0.3 - (t * 0.25),
+        volumeDb: -(t * 25),  // -2.5dB to -25dB actual volume reduction
+      };
     case "slow":
-      // High stability = measured pace
       return { stability: 0.5 + (t * 0.45), similarity_boost: 0.7, style: 0.2 - (t * 0.15) };
     case "mumble":
-      // Low stability + low similarity = unstable mumbling
-      return { stability: 0.5 - (t * 0.4), similarity_boost: 0.5 - (t * 0.3), style: 0.2 + (t * 0.3) };
+      return {
+        stability: 0.5 - (t * 0.3), similarity_boost: 0.5 - (t * 0.2), style: 0.2 + (t * 0.2),
+        volumeDb: -(t * 10),  // slight volume reduction for mumble
+      };
     default:
       return {};
   }

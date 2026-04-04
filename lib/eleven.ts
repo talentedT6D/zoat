@@ -62,7 +62,18 @@ export async function generateVoice(
         vo?.style ?? style,
         preset.use_speaker_boost
       );
-      pcmChunks.push(new Int16Array(pcmBuffer));
+      const samples = new Int16Array(pcmBuffer);
+
+      // Apply volume change in dB if specified
+      if (vo?.volumeDb && vo.volumeDb !== 0) {
+        const multiplier = Math.pow(10, vo.volumeDb / 20); // dB to linear
+        for (let i = 0; i < samples.length; i++) {
+          const val = Math.round(samples[i] * multiplier);
+          samples[i] = Math.max(-32768, Math.min(32767, val)); // clamp to 16-bit
+        }
+      }
+
+      pcmChunks.push(samples);
     }
   }
 
