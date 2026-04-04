@@ -7,11 +7,11 @@ const PRESET_CONFIG: Record<
   VoicePreset,
   { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }
 > = {
-  sarcastic: { stability: 0.3, similarity_boost: 0.6, style: 0.5, use_speaker_boost: true },
-  deadpan: { stability: 0.9, similarity_boost: 0.8, style: 0.1, use_speaker_boost: false },
-  hype: { stability: 0.2, similarity_boost: 0.5, style: 0.8, use_speaker_boost: true },
-  whisper: { stability: 0.7, similarity_boost: 0.7, style: 0.3, use_speaker_boost: false },
-  aggressive: { stability: 0.15, similarity_boost: 0.4, style: 0.7, use_speaker_boost: true },
+  sarcastic: { stability: 0.65, similarity_boost: 0.75, style: 0.15, use_speaker_boost: false },
+  deadpan: { stability: 0.9, similarity_boost: 0.8, style: 0.05, use_speaker_boost: false },
+  hype: { stability: 0.4, similarity_boost: 0.6, style: 0.4, use_speaker_boost: true },
+  whisper: { stability: 0.8, similarity_boost: 0.8, style: 0.05, use_speaker_boost: false },
+  aggressive: { stability: 0.35, similarity_boost: 0.5, style: 0.5, use_speaker_boost: true },
 };
 
 /**
