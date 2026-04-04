@@ -410,27 +410,25 @@ export default function PromptForm({
                 onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "audio"); }} />
             </div>
           )}
-        </Section>
-
-        {/* ── Voice Preset ── */}
-        {voiceMode === "tts" && (
-          <Section label="Voice Style">
-            <div className="grid grid-cols-5 gap-1.5">
-              {VOICE_PRESETS.map((vp) => (
-                <button key={vp.id} onClick={() => setVoicePreset(vp.id)}
-                  className={`py-2 rounded-lg text-center transition-all cursor-pointer ${
-                    voicePreset === vp.id
-                      ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/20 glow-brand-sm"
-                      : "glass glass-hover text-[#f5f0ff]/35 hover:text-[#f5f0ff]/55"
-                  }`}>
-                  <span className="text-[11px] font-[family-name:var(--font-body)] font-medium block">{vp.label}</span>
-                </button>
-              ))}
+          {/* Voice style presets inside the Voice section */}
+          {voiceMode === "tts" && (
+            <div className="mt-3">
+              <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider block mb-1.5">Voice Style</span>
+              <div className="grid grid-cols-5 gap-1.5">
+                {VOICE_PRESETS.map((vp) => (
+                  <button key={vp.id} onClick={() => setVoicePreset(vp.id)}
+                    className={`py-2 rounded-lg text-center transition-all cursor-pointer ${
+                      voicePreset === vp.id
+                        ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/20 glow-brand-sm"
+                        : "glass glass-hover text-[#f5f0ff]/35 hover:text-[#f5f0ff]/55"
+                    }`}>
+                    <span className="text-[11px] font-[family-name:var(--font-body)] font-medium block">{vp.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </Section>
-        )}
-
-
+          )}
+        </Section>
       </div>
 
       {/* ═══ Two-Step Workflow ═══ */}
