@@ -9,26 +9,35 @@ interface AvatarParams {
   videoPrompt: string;
   negativePrompt?: string;
   model?: AvatarModel;
+  renderMode?: "speed" | "balanced" | "quality";
 }
 
 export async function generateAvatar(params: AvatarParams): Promise<string> {
-  const { imageUrl, audioUrl, videoPrompt, negativePrompt, model = "aurora" } = params;
+  const { imageUrl, audioUrl, videoPrompt, model = "aurora", renderMode = "balanced" } = params;
 
   const prompt = `9:16 vertical. ${videoPrompt}`.slice(0, 500);
 
   if (model === "ai-avatar") {
+    const config = {
+      speed:    { num_frames: 81,  resolution: "480p" as const, acceleration: "high" as const },
+      balanced: { num_frames: 113, resolution: "480p" as const, acceleration: "regular" as const },
+      quality:  { num_frames: 145, resolution: "720p" as const, acceleration: "none" as const },
+    }[renderMode];
+
     return callFal("fal-ai/ai-avatar", {
-      image_url: imageUrl, audio_url: audioUrl, prompt,
-      num_frames: 81,
-      resolution: "480p",
-      acceleration: "high",
+      image_url: imageUrl, audio_url: audioUrl, prompt, ...config,
     });
   }
 
   // Aurora (default)
+  const config = {
+    speed:    { guidance_scale: 1, audio_guidance_scale: 1.5, resolution: "480p" as const },
+    balanced: { guidance_scale: 1.5, audio_guidance_scale: 2, resolution: "720p" as const },
+    quality:  { guidance_scale: 2.5, audio_guidance_scale: 3, resolution: "720p" as const },
+  }[renderMode];
+
   return callFal("fal-ai/creatify/aurora", {
-    image_url: imageUrl, audio_url: audioUrl, prompt,
-    guidance_scale: 1.5, audio_guidance_scale: 2, resolution: "720p",
+    image_url: imageUrl, audio_url: audioUrl, prompt, ...config,
   });
 }
 

@@ -100,6 +100,7 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
     videoPrompt,
     negativePrompt: params.negativePrompt,
     model: params.avatarModel,
+    renderMode: params.renderMode,
   });
 
   return videoUrl;

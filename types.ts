@@ -99,4 +99,5 @@ export interface GenerateRequest {
   negativePrompt?: string;
   customPrompts?: CustomPrompts;
   avatarModel?: AvatarModel;
+  renderMode?: "speed" | "balanced" | "quality";
 }

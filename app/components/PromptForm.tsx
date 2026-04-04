@@ -17,9 +17,16 @@ import type {
 import { stripAllAnnotations, estimateDuration } from "@/lib/scriptAnnotations";
 import { REGISTRY_BY_CATEGORY, REGISTRY_BY_TAG, TOOLBAR_CATEGORIES } from "@/lib/annotationRegistry";
 
-const MODEL_OPTIONS: { id: AvatarModel; name: string; desc: string; features: string; maxSec: number }[] = [
-  { id: "ai-avatar",  name: "AI Avatar",   features: "Fastest, 480p, high acceleration",           desc: "~30s render", maxSec: 6 },
-  { id: "aurora",     name: "Aurora",      features: "Fast lip-sync, long audio, 720p",            desc: "~60s render", maxSec: 120 },
+const MODEL_OPTIONS: { id: AvatarModel; name: string; features: string; desc: string; maxSec: number }[] = [
+  { id: "ai-avatar",  name: "AI Avatar",  features: "480p, high acceleration",  desc: "~30s render", maxSec: 6 },
+  { id: "aurora",     name: "Aurora",     features: "Lip-sync, long audio",     desc: "~60s render", maxSec: 120 },
+];
+
+type RenderMode = "speed" | "balanced" | "quality";
+const RENDER_MODES: { id: RenderMode; label: string; desc: string }[] = [
+  { id: "speed",    label: "Speed",    desc: "Fastest render" },
+  { id: "balanced", label: "Balanced", desc: "Good balance" },
+  { id: "quality",  label: "Quality",  desc: "Best quality" },
 ];
 
 const COSTUMES: { id: CostumeVariant; label: string }[] = [
@@ -60,6 +67,7 @@ export default function PromptForm({
     stability: 7, similarity: 6, speed: 1.0, pitch: 0, exaggeration: 0.3, cfg: 0.5,
   });
   const [avatarModel, setAvatarModel] = useState<AvatarModel>("aurora");
+  const [renderMode, setRenderMode] = useState<RenderMode>("balanced");
   const [videoPrompt, setVideoPrompt] = useState("Black crocodile mascot character speaking directly to camera with natural hand gestures, expressive body movement, energetic delivery");
   const [negativePrompt, setNegativePrompt] = useState("blurry, deformed face, static, no movement, bad quality, distortion, low resolution, text, watermark");
   const [bodyMovement, setBodyMovement] = useState<BodyMovement>({
@@ -174,7 +182,7 @@ export default function PromptForm({
 
     onGenerate({
       script: script.trim(), gestureMode, costume, mouth, bodyMovement, voicePreset, voiceTuning,
-      voiceMode, baseImageUrl, avatarModel,
+      voiceMode, baseImageUrl, avatarModel, renderMode,
       uploadedAudioUrl: voiceMode === "upload" ? uploadedAudioUrl : undefined,
       audioUrl: voiceMode === "tts" && generatedAudioUrl ? generatedAudioUrl : undefined,
       videoPrompt: videoPrompt.trim() || undefined,
@@ -557,6 +565,21 @@ export default function PromptForm({
             }
             return null;
           })()}
+
+          {/* Speed / Quality toggle */}
+          <div className="flex gap-1 mb-2.5">
+            {RENDER_MODES.map(({ id, label, desc }) => (
+              <button key={id} onClick={() => setRenderMode(id)}
+                className={`flex-1 py-2 rounded-lg text-center transition-all cursor-pointer ${
+                  renderMode === id
+                    ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
+                    : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+                }`}>
+                <div className={`text-[10px] font-[family-name:var(--font-body)] font-medium`}>{label}</div>
+                <div className={`text-[7px] mt-0.5 ${renderMode === id ? "text-[#b87df5]/30" : "text-[#f5f0ff]/8"}`}>{desc}</div>
+              </button>
+            ))}
+          </div>
 
           {/* Generate Video button */}
           <button onClick={handleSubmit} disabled={!canGenerate}
