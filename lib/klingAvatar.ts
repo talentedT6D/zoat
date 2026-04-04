@@ -93,6 +93,6 @@ async function callFal(endpoint: string, input: Record<string, unknown>): Promis
     throw new Error(`No video URL in response from ${endpoint}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`${endpoint.split("/").pop()} failed: ${msg}`);
+    throw new Error(`${endpoint.split("/").pop()}: ${msg}. Try Aurora model or shorter audio.`);
   }
 }
