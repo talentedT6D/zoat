@@ -556,9 +556,8 @@ export default function PromptForm({
                         ? "bg-[#f5f0ff]/[0.01] text-[#f5f0ff]/10 border border-transparent opacity-50"
                         : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
                   }`}>
-                  <div className="text-[10px] font-[family-name:var(--font-body)] font-medium">{name}</div>
-                  <div className={`text-[7px] mt-0.5 leading-tight ${
-                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]/40" : "text-[#f5f0ff]/8"
+                  <div className={`text-[9px] font-[family-name:var(--font-body)] font-medium leading-tight ${
+                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]" : "text-[#f5f0ff]/25"
                   }`}>
                     {tooLong ? `Audio too long` : features}
                   </div>
