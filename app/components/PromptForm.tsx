@@ -98,9 +98,11 @@ export default function PromptForm({
     const end = ta.selectionEnd;
     const selected = script.slice(start, end);
 
-    // Build tag string with optional default duration
+    // Build tag string with default value (seconds for self-closing, intensity for wrappers)
     const def = REGISTRY_BY_TAG.get(tag.toLowerCase());
-    const durSuffix = def?.durationAllowed && def.defaultDuration ? `:${def.defaultDuration}s` : "";
+    const durSuffix = def?.durationAllowed && def.defaultDuration
+      ? (isWrapper ? `:${def.defaultDuration}` : `:${def.defaultDuration}s`)
+      : "";
     const openTag = `[${tag}${durSuffix}]`;
     const closeTag = `[/${tag}]`;
 

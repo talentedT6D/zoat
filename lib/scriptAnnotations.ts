@@ -42,43 +42,58 @@ function generatePauseText(seconds: number): string {
   return `${PAUSE_TOKEN}${seconds}${PAUSE_TOKEN_END}`;
 }
 
-/** Voice override presets for different delivery styles */
-const VOICE_OVERRIDES: Record<string, VoiceOverride> = {
-  loud:    { stability: 0.15, similarity_boost: 0.4, style: 0.9 },   // aggressive, expressive
-  whisper: { stability: 0.85, similarity_boost: 0.9, style: 0.05 },  // very stable, minimal style = quieter
-  slow:    { stability: 0.9, similarity_boost: 0.8, style: 0.1 },    // very stable = slower delivery
-  mumble:  { stability: 0.2, similarity_boost: 0.3, style: 0.4 },    // unstable, low similarity = mumbled
-};
+/**
+ * Scale voice settings by intensity (1-10).
+ * At intensity 1: barely different from normal.
+ * At intensity 10: maximum effect.
+ */
+function scaleVoiceOverride(type: string, intensity: number): VoiceOverride {
+  const t = intensity / 10; // 0.1 to 1.0
+
+  switch (type) {
+    case "loud":
+      // Lower stability + higher style = more aggressive/expressive
+      return { stability: 0.7 - (t * 0.6), similarity_boost: 0.5 - (t * 0.2), style: 0.3 + (t * 0.7) };
+    case "whisper":
+      // Higher stability + lower style = softer/quieter
+      return { stability: 0.5 + (t * 0.45), similarity_boost: 0.5 + (t * 0.45), style: 0.3 - (t * 0.28) };
+    case "slow":
+      // High stability = measured pace
+      return { stability: 0.5 + (t * 0.45), similarity_boost: 0.7, style: 0.2 - (t * 0.15) };
+    case "mumble":
+      // Low stability + low similarity = unstable mumbling
+      return { stability: 0.5 - (t * 0.4), similarity_boost: 0.5 - (t * 0.3), style: 0.2 + (t * 0.3) };
+    default:
+      return {};
+  }
+}
 
 /**
  * Split ttsText into segments of speech, silence, and voice-modified speech.
  * Pause tokens <<PAUSE:6>> become silence segments.
- * Voice tokens <<VOICE:whisper>>text<<ENDVOICE>> become speech with voice overrides.
+ * Voice tokens <<VOICE:whisper:8>>text<<ENDVOICE>> become speech with scaled voice overrides.
  */
 export function splitIntoSegments(ttsText: string): AudioSegment[] {
   const segments: AudioSegment[] = [];
-  // Match both pause and voice tokens
-  const regex = /<<PAUSE:([\d.]+)>>|<<VOICE:(\w+)>>(.*?)<<ENDVOICE>>/g;
+  const regex = /<<PAUSE:([\d.]+)>>|<<VOICE:(\w+):([\d.]+)>>(.*?)<<ENDVOICE>>/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(ttsText)) !== null) {
-    // Add any plain text before this token
     const before = ttsText.slice(lastIndex, match.index).trim();
     if (before) segments.push({ type: "speech", text: before });
 
     if (match[1]) {
-      // Pause token
       segments.push({ type: "silence", seconds: parseFloat(match[1]) });
-    } else if (match[2] && match[3]) {
-      // Voice token
+    } else if (match[2] && match[4]) {
       const voiceType = match[2];
-      const text = match[3].trim();
+      const intensity = parseFloat(match[3]);
+      const text = match[4].trim();
       if (text) {
         segments.push({
           type: "speech",
           text,
-          voiceOverride: VOICE_OVERRIDES[voiceType],
+          voiceOverride: scaleVoiceOverride(voiceType, intensity),
         });
       }
     }
@@ -107,20 +122,21 @@ export function parseAnnotations(rawScript: string): ParsedScript {
     const esc = escapeRegex(def.tag);
     // Match [tag] or [tag:Ns] ... [/tag]
     const regex = new RegExp(`\\[${esc}${DURATION_PATTERN}\\](.*?)\\[\\/${esc}\\]`, "gi");
-    ttsText = ttsText.replace(regex, (_match, durStr: string | undefined, content: string) => {
-      const duration = durStr ? parseFloat(durStr) : undefined;
-      cues.push({ def, text: content.trim(), duration });
+    ttsText = ttsText.replace(regex, (_match, intensityStr: string | undefined, content: string) => {
+      // For wrappers, the :N value is intensity (1-10), default 5
+      const intensity = intensityStr ? Math.min(10, Math.max(1, parseFloat(intensityStr))) : 5;
+      cues.push({ def, text: content.trim(), duration: intensity });
       switch (def.ttsEffect) {
         case "uppercase":
-          return `<<VOICE:loud>>${content.toUpperCase()}<<ENDVOICE>>`;
+          return `<<VOICE:loud:${intensity}>>${content.toUpperCase()}<<ENDVOICE>>`;
         case "whisper":
-          return `<<VOICE:whisper>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
+          return `<<VOICE:whisper:${intensity}>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
         case "slow-speech":
-          return `<<VOICE:slow>>${content.trim()}<<ENDVOICE>>`;
+          return `<<VOICE:slow:${intensity}>>${content.trim()}<<ENDVOICE>>`;
         case "fast-speech":
           return content.replace(/[.,;:!?\-—–()]/g, " ").replace(/\s+/g, " ").trim();
         case "mumble":
-          return `<<VOICE:mumble>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
+          return `<<VOICE:mumble:${intensity}>>${content.toLowerCase().trim()}<<ENDVOICE>>`;
         case "passthrough":
           return content;
         default:
