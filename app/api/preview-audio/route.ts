@@ -3,7 +3,7 @@ import { generateVoice } from "@/lib/eleven";
 import { parseAnnotations } from "@/lib/scriptAnnotations";
 import type { VoicePreset, VoiceTuning } from "@/types";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const audioUrl = await generateVoice(parsed.ttsText, voicePreset, voiceTuning);
+    const audioUrl = await generateVoice(parsed.segments, voicePreset, voiceTuning);
     return NextResponse.json({ success: true, audioUrl });
   } catch (error) {
     console.error("Audio preview error:", error);

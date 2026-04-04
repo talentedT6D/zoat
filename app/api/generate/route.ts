@@ -91,7 +91,7 @@ async function runPipeline(params: GenerateRequest): Promise<string> {
   } else if (params.audioUrl) {
     audioUrl = params.audioUrl;
   } else {
-    audioUrl = await generateVoice(parsed.ttsText, voicePreset, voiceTuning);
+    audioUrl = await generateVoice(parsed.segments, voicePreset, voiceTuning);
   }
 
   const videoUrl = await generateAvatar({

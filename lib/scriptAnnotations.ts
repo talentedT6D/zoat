@@ -15,25 +15,48 @@ export interface ParsedCue {
   duration?: number;   // seconds, from :Ns suffix
 }
 
+export type AudioSegment =
+  | { type: "speech"; text: string }
+  | { type: "silence"; seconds: number };
+
 export interface ParsedScript {
   ttsText: string;
+  segments: AudioSegment[];
   gestureDirections: string;
   toneDirections: string;
   cleanScript: string;
   cuesByCategory: Partial<Record<AnnotationCategory, ParsedCue[]>>;
 }
 
-/**
- * Generate text that creates a real pause in ElevenLabs TTS.
- * A period followed by spaces creates natural sentence-break silence.
- * Clamped to 10s max.
- */
+/** Placeholder token for pauses in ttsText — replaced by real silence in audio generation */
+const PAUSE_TOKEN = "<<PAUSE:";
+const PAUSE_TOKEN_END = ">>";
+
 function generatePauseText(seconds: number): string {
-  const clamped = Math.min(Math.max(seconds, 0.3), 10);
-  // Each ". " adds ~0.3-0.5s of natural sentence-break silence
-  // Using just periods and spaces — no commas or ellipsis that get vocalized
-  const units = Math.max(1, Math.round(clamped * 2));
-  return ". " + ".  ".repeat(units);
+  return `${PAUSE_TOKEN}${seconds}${PAUSE_TOKEN_END}`;
+}
+
+/**
+ * Split ttsText into segments of speech and silence.
+ * Pause tokens like <<PAUSE:6>> become silence segments.
+ */
+export function splitIntoSegments(ttsText: string): AudioSegment[] {
+  const segments: AudioSegment[] = [];
+  const regex = /<<PAUSE:([\d.]+)>>/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(ttsText)) !== null) {
+    const before = ttsText.slice(lastIndex, match.index).trim();
+    if (before) segments.push({ type: "speech", text: before });
+    segments.push({ type: "silence", seconds: parseFloat(match[1]) });
+    lastIndex = match.index + match[0].length;
+  }
+
+  const after = ttsText.slice(lastIndex).trim();
+  if (after) segments.push({ type: "speech", text: after });
+
+  return segments.length > 0 ? segments : [{ type: "speech", text: ttsText }];
 }
 
 /**
@@ -144,7 +167,9 @@ export function parseAnnotations(rawScript: string): ParsedScript {
   // 6. Clean script for display/char counting
   const cleanScript = stripAllAnnotations(rawScript);
 
-  return { ttsText, gestureDirections, toneDirections, cleanScript, cuesByCategory };
+  const segments = splitIntoSegments(ttsText);
+
+  return { ttsText, segments, gestureDirections, toneDirections, cleanScript, cuesByCategory };
 }
 
 function formatDuration(dur?: number): string {
