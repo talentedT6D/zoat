@@ -73,50 +73,77 @@ export default function Home() {
       setCompiledPrompt(prompt);
 
       try {
-        const res = await fetch("/api/generate", {
+        // Step 1: Generate audio if needed (uses pre-baked audioUrl if available)
+        let audioUrl = request.audioUrl || request.uploadedAudioUrl;
+        if (!audioUrl) {
+          const audioRes = await fetch("/api/preview-audio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ script: request.script, voicePreset: request.voicePreset, voiceTuning: request.voiceTuning }),
+          });
+          const audioData = await audioRes.json();
+          if (!audioData.success) throw new Error(audioData.error || "Audio generation failed");
+          audioUrl = audioData.audioUrl;
+        }
+
+        // Step 2: Submit video job (returns immediately)
+        const submitRes = await fetch("/api/generate-video", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: JSON.stringify({
+            imageUrl: request.baseImageUrl,
+            audioUrl,
+            videoPrompt: request.videoPrompt,
+            model: request.avatarModel,
+            renderMode: request.renderMode,
+          }),
         });
+        const submitData = await submitRes.json();
+        if (!submitData.success) throw new Error(submitData.error || "Failed to submit video job");
 
-        // Handle non-JSON responses (server crash, timeout, HTML error pages)
-        const text = await res.text();
-        let data: { success: boolean; videoUrl?: string; error?: string };
-        try {
-          data = JSON.parse(text);
-        } catch {
-          setStatus("failed");
-          setError(`Server error (${res.status}): ${text.slice(0, 100)}`);
-          setIsGenerating(false);
-          return;
+        // Step 3: Poll for completion from the browser (no server timeout)
+        const { requestId, endpoint } = submitData;
+        const maxPollTime = 10 * 60 * 1000; // 10 minutes
+        const pollInterval = 3000;
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxPollTime) {
+          await new Promise(r => setTimeout(r, pollInterval));
+
+          const statusRes = await fetch("/api/video-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId, endpoint }),
+          });
+          const statusData = await statusRes.json();
+
+          if (statusData.status === "done" && statusData.videoUrl) {
+            const videoUrl = statusData.videoUrl;
+            setStatus("done");
+            setVideoUrl(videoUrl);
+            setIsGenerating(false);
+
+            setHistory((prev) => [
+              {
+                id: `${Date.now()}`,
+                timestamp: Date.now(),
+                videoUrl,
+                script: request.script,
+                voicePreset: request.voicePreset,
+                gestureMode: request.gestureMode,
+                costume: request.costume,
+              },
+              ...prev,
+            ]);
+            return;
+          }
+
+          if (statusData.status === "failed") {
+            throw new Error(statusData.error || "Video generation failed");
+          }
         }
 
-        if (!data.success || !data.videoUrl) {
-          setStatus("failed");
-          setError(data.error || "Generation failed");
-          setIsGenerating(false);
-          return;
-        }
-
-        // Synchronous response — video URL returned directly
-        const videoUrl = data.videoUrl;
-        setStatus("done");
-        setVideoUrl(videoUrl);
-        setIsGenerating(false);
-
-        // Add to history
-        setHistory((prev) => [
-          {
-            id: `${Date.now()}`,
-            timestamp: Date.now(),
-            videoUrl,
-            script: request.script,
-            voicePreset: request.voicePreset,
-            gestureMode: request.gestureMode,
-            costume: request.costume,
-          },
-          ...prev,
-        ]);
+        throw new Error("Video generation timed out after 10 minutes");
       } catch (err) {
         setStatus("failed");
         setError(err instanceof Error ? err.message : "Network error");
