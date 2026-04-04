@@ -59,14 +59,14 @@ export const REGISTRY: AnnotationDef[] = [
   { tag: "hesitate",  type: "self-closing", category: "timing", label: "Hesitate",  ttsEffect: "ellipsis", promptEffect: "hesitates briefly",   durationAllowed: true, defaultDuration: 1,   tier: "audio" },
 
   // ── Voice wrappers (real audio effect via per-segment voice settings) ──
-  // :N = intensity 1-10 (default 5). e.g. [loud:8]text[/loud] = 80% loud
-  { tag: "loud",     type: "wrapper", category: "voice", label: "LOUD",      ttsEffect: "uppercase",    promptEffect: "delivers with intensity",      durationAllowed: true, defaultDuration: 7,  tier: "audio" },
-  { tag: "whisper",  type: "wrapper", category: "voice", label: "Whisper",   ttsEffect: "whisper",      promptEffect: "hushed intimate delivery",     durationAllowed: true, defaultDuration: 7,  tier: "audio" },
-  { tag: "slow",     type: "wrapper", category: "voice", label: "Slow",      ttsEffect: "slow-speech",  promptEffect: "slows pace deliberately",      durationAllowed: true, defaultDuration: 5,  tier: "audio" },
+  // Use dB: [loud:+10dB], [whisper:-15dB]. Range: -20dB to +20dB. 0dB = normal.
+  { tag: "loud",     type: "wrapper", category: "voice", label: "LOUD +dB",  ttsEffect: "uppercase",    promptEffect: "delivers with intensity",      durationAllowed: true, defaultDuration: 10, tier: "audio" },
+  { tag: "whisper",  type: "wrapper", category: "voice", label: "Whisper -dB", ttsEffect: "whisper",    promptEffect: "hushed intimate delivery",     durationAllowed: true, defaultDuration: -10, tier: "audio" },
+  { tag: "slow",     type: "wrapper", category: "voice", label: "Slow",      ttsEffect: "slow-speech",  promptEffect: "slows pace deliberately",      durationAllowed: true, defaultDuration: 10, tier: "audio" },
   { tag: "fast",     type: "wrapper", category: "voice", label: "Fast",      ttsEffect: "fast-speech",  promptEffect: "speeds up delivery",           durationAllowed: true, tier: "audio" },
-  { tag: "dramatic", type: "wrapper", category: "voice", label: "Dramatic",  ttsEffect: "uppercase",    promptEffect: "theatrical dramatic delivery",  durationAllowed: true, defaultDuration: 8,  tier: "audio" },
-  { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",    ttsEffect: "mumble",       promptEffect: "mumbles under breath",         durationAllowed: true, defaultDuration: 6,  tier: "audio" },
-  { tag: "spell",    type: "wrapper", category: "voice", label: "Spell Out", ttsEffect: "slow-speech",  promptEffect: "spells out each word clearly",  durationAllowed: true, defaultDuration: 7,  tier: "audio" },
+  { tag: "dramatic", type: "wrapper", category: "voice", label: "Dramatic",  ttsEffect: "uppercase",    promptEffect: "theatrical dramatic delivery",  durationAllowed: true, defaultDuration: 15, tier: "audio" },
+  { tag: "mumble",   type: "wrapper", category: "voice", label: "Mumble",    ttsEffect: "mumble",       promptEffect: "mumbles under breath",         durationAllowed: true, defaultDuration: -8, tier: "audio" },
+  { tag: "spell",    type: "wrapper", category: "voice", label: "Spell Out", ttsEffect: "slow-speech",  promptEffect: "spells out each word clearly",  durationAllowed: true, defaultDuration: 10, tier: "audio" },
 
 ];
 
@@ -100,6 +100,9 @@ export function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Duration pattern fragment: matches optional `:1s`, `:2.5s`, `:0.3s` */
-/** Matches optional :N or :Ns suffix. e.g. :3, :1.5s, :10 */
-export const DURATION_PATTERN = "(?::(\\d+(?:\\.\\d+)?)s?)?";
+/**
+ * Matches optional value suffix:
+ * - :3s or :3 (seconds for pauses)
+ * - :+6dB or :-12dB or :6dB (decibels for voice)
+ */
+export const DURATION_PATTERN = "(?::([+-]?\\d+(?:\\.\\d+)?)(s|dB)?)?";

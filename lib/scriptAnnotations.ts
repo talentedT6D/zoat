@@ -122,9 +122,23 @@ export function parseAnnotations(rawScript: string): ParsedScript {
     const esc = escapeRegex(def.tag);
     // Match [tag] or [tag:Ns] ... [/tag]
     const regex = new RegExp(`\\[${esc}${DURATION_PATTERN}\\](.*?)\\[\\/${esc}\\]`, "gi");
-    ttsText = ttsText.replace(regex, (_match, intensityStr: string | undefined, content: string) => {
-      // For wrappers, the :N value is intensity (1-10), default 5
-      const intensity = intensityStr ? Math.min(10, Math.max(1, parseFloat(intensityStr))) : 5;
+    ttsText = ttsText.replace(regex, (_match, valStr: string | undefined, unit: string | undefined, content: string) => {
+      // For wrappers: dB value → convert to 1-10 intensity. No unit → treat as raw intensity.
+      let intensity = 5;
+      if (valStr) {
+        const val = parseFloat(valStr);
+        if (unit === "dB") {
+          // dB scale: map absolute value to intensity 1-10
+          // +10dB loud → intensity 7.5, +20dB → intensity 10
+          // -10dB whisper → intensity 7.5, -20dB → intensity 10
+          // The sign determines loud vs whisper (handled by the tag type)
+          // The magnitude determines how extreme the effect is
+          intensity = Math.min(10, Math.max(1, Math.abs(val) / 2));
+        } else {
+          // Raw number: treat as 1-10 intensity
+          intensity = Math.min(10, Math.max(1, val));
+        }
+      }
       cues.push({ def, text: content.trim(), duration: intensity });
       switch (def.ttsEffect) {
         case "uppercase":
@@ -170,17 +184,15 @@ export function parseAnnotations(rawScript: string): ParsedScript {
     // Apply TTS effect then strip
     switch (def.ttsEffect) {
       case "ellipsis": {
-        // Generate repeated punctuation for reliable pauses in ElevenLabs
-        // Each ". , " unit ≈ 0.3-0.5s pause. Scale by duration.
-        ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
-          const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 1);
+        ttsText = ttsText.replace(regex, (_m, valStr: string | undefined) => {
+          const dur = valStr ? parseFloat(valStr) : (def.defaultDuration ?? 1);
           return generatePauseText(dur);
         });
         break;
       }
       case "long-ellipsis": {
-        ttsText = ttsText.replace(regex, (_m, durStr: string | undefined) => {
-          const dur = durStr ? parseFloat(durStr) : (def.defaultDuration ?? 3);
+        ttsText = ttsText.replace(regex, (_m, valStr: string | undefined) => {
+          const dur = valStr ? parseFloat(valStr) : (def.defaultDuration ?? 3);
           return generatePauseText(dur);
         });
         break;

@@ -98,11 +98,17 @@ export default function PromptForm({
     const end = ta.selectionEnd;
     const selected = script.slice(start, end);
 
-    // Build tag string with default value (seconds for self-closing, intensity for wrappers)
+    // Build tag string with default value (seconds for self-closing, dB for wrappers)
     const def = REGISTRY_BY_TAG.get(tag.toLowerCase());
-    const durSuffix = def?.durationAllowed && def.defaultDuration
-      ? (isWrapper ? `:${def.defaultDuration}` : `:${def.defaultDuration}s`)
-      : "";
+    let durSuffix = "";
+    if (def?.durationAllowed && def.defaultDuration != null) {
+      if (isWrapper) {
+        const val = def.defaultDuration;
+        durSuffix = `:${val > 0 ? "+" : ""}${val}dB`;
+      } else {
+        durSuffix = `:${def.defaultDuration}s`;
+      }
+    }
     const openTag = `[${tag}${durSuffix}]`;
     const closeTag = `[/${tag}]`;
 
