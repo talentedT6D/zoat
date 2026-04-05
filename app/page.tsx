@@ -165,7 +165,7 @@ export default function Home() {
   return (
     <>
       {!loaded && <Preloader onComplete={() => setLoaded(true)} />}
-    <div className={`flex h-screen overflow-hidden bg-[#08060e] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}>
+    <div className={`flex h-screen overflow-hidden bg-[var(--bg-base)] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}>
       <PromptForm
         onGenerate={handleGenerate}
         isGenerating={isGenerating}
@@ -186,18 +186,18 @@ export default function Home() {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed bottom-6 right-6 glass border-[#ff6900]/15 px-5 py-4 rounded-xl text-sm shadow-2xl max-w-md animate-fade-in">
+        <div className="fixed bottom-6 right-6 glass border-[var(--warning)]/15 px-5 py-4 rounded-xl text-sm shadow-2xl max-w-md animate-fade-in">
           <div className="flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-[#ff6900]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg className="w-3 h-3 text-[#ff6900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-5 h-5 rounded-full bg-[var(--warning)]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-3 h-3 text-[var(--warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-xs font-[family-name:var(--font-heading)] font-medium text-[#ff6900]/80">Error</p>
-              <p className="text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/40 mt-0.5">{error}</p>
+              <p className="text-xs font-[family-name:var(--font-heading)] font-medium text-[var(--warning)]/80">Error</p>
+              <p className="text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/40 mt-0.5">{error}</p>
             </div>
-            <button onClick={() => setError(null)} className="text-[#f5f0ff]/15 hover:text-[#f5f0ff]/40 cursor-pointer">
+            <button onClick={() => setError(null)} className="text-[var(--text-1)]/15 hover:text-[var(--text-1)]/40 cursor-pointer">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>

@@ -254,29 +254,29 @@ export default function PromptForm({
   }, [canGenerate, handleSubmit]);
 
   return (
-    <div className="w-[420px] min-w-[420px] h-full overflow-y-auto bg-[#0a0814] border-r border-[#9b51e0]/[0.06] flex flex-col">
+    <div className="w-[440px] min-w-[440px] h-full bg-[var(--bg-1)] border-r border-[var(--border-1)] flex flex-col">
       {/* ── Header ── */}
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-5 py-4 border-b border-[var(--border-1)]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9b51e0]/20 to-[#0693e3]/10 border border-[#9b51e0]/15 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent)]/15 to-cyan-500/10 flex items-center justify-center">
             <span className="text-sm font-[family-name:var(--font-heading)] font-black text-brand-gradient">Z</span>
           </div>
           <div>
-            <h1 className="text-[15px] font-[family-name:var(--font-heading)] font-bold text-[#f5f0ff] tracking-tight">
+            <h1 className="text-sm font-[family-name:var(--font-heading)] font-bold text-[var(--text-1)] tracking-tight">
               Zag of All Trades
             </h1>
-            <p className="text-[10px] text-[#f5f0ff]/25 font-[family-name:var(--font-body)] tracking-wide">
-              AI Avatar Studio &middot; Must Be Nuts
+            <p className="text-[10px] text-[var(--text-3)] font-[family-name:var(--font-body)]">
+              AI Avatar Studio
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 px-6 pb-6 flex flex-col gap-5 overflow-y-auto">
+      <div className="flex-1 px-5 py-4 flex flex-col gap-4 overflow-y-auto">
         {/* ── Base Image Upload ── */}
         <Section label="Character Image">
           <div
-            className={`upload-zone rounded-xl overflow-hidden cursor-pointer transition-all ${baseImagePreview ? "border-[#9b51e0]/15" : ""} ${uploading === "image" ? "active" : ""}`}
+            className={`upload-zone rounded-xl overflow-hidden cursor-pointer transition-all ${baseImagePreview ? "border-[var(--accent)]/15" : ""} ${uploading === "image" ? "active" : ""}`}
             onClick={() => imageInputRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleImageDrop}
@@ -284,22 +284,22 @@ export default function PromptForm({
             {baseImagePreview ? (
               <div className="relative group">
                 <Image src={baseImagePreview} alt="Base character" width={388} height={218} className="w-full h-[180px] object-cover" />
-                <div className="absolute inset-0 bg-[#08060e]/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-xs text-[#f5f0ff]/60 font-[family-name:var(--font-body)]">Click to replace</span>
+                <div className="absolute inset-0 bg-[var(--bg-base)]/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-xs text-[var(--text-1)]/60 font-[family-name:var(--font-body)]">Click to replace</span>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 {uploading === "image" ? <Spinner /> : (
                   <>
-                    <div className="w-12 h-12 rounded-xl border border-[#9b51e0]/10 bg-[#9b51e0]/[0.03] flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#9b51e0]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="w-12 h-12 rounded-xl border border-[var(--accent)]/10 bg-[var(--accent)]/[0.03] flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[var(--accent)]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-[#f5f0ff]/35 font-[family-name:var(--font-body)]">Drop image or click to upload</p>
-                      <p className="text-[10px] text-[#f5f0ff]/15 mt-1">PNG, JPG up to 10MB</p>
+                      <p className="text-xs text-[var(--text-1)]/35 font-[family-name:var(--font-body)]">Drop image or click to upload</p>
+                      <p className="text-[10px] text-[var(--text-1)]/15 mt-1">PNG, JPG up to 10MB</p>
                     </div>
                   </>
                 )}
@@ -316,7 +316,7 @@ export default function PromptForm({
             {(["tts", "upload"] as VoiceMode[]).map((mode) => (
               <button key={mode} onClick={() => setVoiceMode(mode)}
                 className={`flex-1 py-2 rounded-lg text-xs font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
-                  voiceMode === mode ? "bg-[#9b51e0]/15 text-[#b87df5] glow-brand-sm" : "text-[#f5f0ff]/30 hover:text-[#f5f0ff]/50"
+                  voiceMode === mode ? "bg-[var(--accent)]/15 text-[var(--accent-light)] glow-brand-sm" : "text-[var(--text-1)]/30 hover:text-[var(--text-1)]/50"
                 }`}>
                 {mode === "tts" ? "Text to Speech" : "Upload Audio"}
               </button>
@@ -328,13 +328,13 @@ export default function PromptForm({
               {/* Annotation toolbar — data-driven from registry */}
               <div className="mb-2">
                 <button type="button" onClick={() => setToolbarOpen((p) => !p)}
-                  className="flex items-center gap-1.5 text-[10px] text-[#f5f0ff]/25 hover:text-[#b87df5] transition-colors cursor-pointer mb-1.5">
+                  className="flex items-center gap-1.5 text-[10px] text-[var(--text-1)]/25 hover:text-[var(--accent-light)] transition-colors cursor-pointer mb-1.5">
                   <svg className={`w-3 h-3 transition-transform ${toolbarOpen ? "rotate-180" : ""}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                   </svg>
                   <span>Annotations</span>
-                  <span className="text-[#f5f0ff]/10">({TOOLBAR_CATEGORIES.length} categories)</span>
+                  <span className="text-[var(--text-1)]/10">({TOOLBAR_CATEGORIES.length} categories)</span>
                 </button>
                 {toolbarOpen && (
                   <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
@@ -343,7 +343,7 @@ export default function PromptForm({
                       if (defs.length === 0) return null;
                       return (
                         <div key={category} className="flex items-center gap-1 flex-wrap">
-                          <span className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider w-14 shrink-0">{label}</span>
+                          <span className="text-[9px] text-[var(--text-1)]/15 uppercase tracking-wider w-14 shrink-0">{label}</span>
                           {defs.map((def) => (
                             <AnnotationBtn key={def.tag} label={def.label} tier={def.tier}
                               onClick={() => insertAnnotation(def.tag, def.type === "wrapper")} />
@@ -356,16 +356,16 @@ export default function PromptForm({
               </div>
               <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 5000))}
                 placeholder="Type your script... Use toolbar to add pauses, gestures, and voice cues"
-                className="w-full h-32 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[#f5f0ff]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
+                className="w-full h-32 bg-[var(--accent)]/[0.03] border border-[var(--accent)]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[var(--text-1)]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[var(--accent)]/25 transition-colors leading-relaxed" />
               <div className="flex justify-between mt-1.5 px-1">
-                <span className="text-[10px] text-[#f5f0ff]/15">
+                <span className="text-[10px] text-[var(--text-1)]/15">
                   {estDuration > 0
                     ? `~${estDuration >= 60 ? `${Math.floor(estDuration / 60)}m ${Math.round(estDuration % 60)}s` : `${estDuration}s`} video`
                     : hasAnnotations
                       ? `${cleanLength} chars + annotations`
                       : "Annotations supported"}
                 </span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[#ff6900]/60" : "text-[#f5f0ff]/15"}`}>
+                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[var(--warning)]/60" : "text-[var(--text-1)]/15"}`}>
                   {cleanLength}/5000
                 </span>
               </div>
@@ -374,21 +374,21 @@ export default function PromptForm({
 
           {voiceMode === "upload" && (
             <div className="mt-3 animate-fade-in">
-              <div className={`upload-zone rounded-xl cursor-pointer ${audioFileName ? "border-[#9b51e0]/15" : ""} ${uploading === "audio" ? "active" : ""}`}
+              <div className={`upload-zone rounded-xl cursor-pointer ${audioFileName ? "border-[var(--accent)]/15" : ""} ${uploading === "audio" ? "active" : ""}`}
                 onClick={() => audioInputRef.current?.click()}>
                 {audioFileName ? (
                   <div className="flex items-center gap-3 p-3.5">
-                    <div className="w-9 h-9 rounded-lg bg-[#9b51e0]/10 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-[#b87df5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="w-9 h-9 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-[var(--accent-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#f5f0ff]/65 truncate">{audioFileName}</p>
-                      <p className="text-[10px] text-[#f5f0ff]/25 mt-0.5">Lip-sync mode</p>
+                      <p className="text-xs text-[var(--text-1)]/65 truncate">{audioFileName}</p>
+                      <p className="text-[10px] text-[var(--text-1)]/25 mt-0.5">Lip-sync mode</p>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); setUploadedAudioUrl(""); setAudioFileName(""); }}
-                      className="text-[#f5f0ff]/15 hover:text-[#f5f0ff]/40 cursor-pointer">
+                      className="text-[var(--text-1)]/15 hover:text-[var(--text-1)]/40 cursor-pointer">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
@@ -398,11 +398,11 @@ export default function PromptForm({
                   <div className="flex flex-col items-center py-6 gap-2">
                     {uploading === "audio" ? <Spinner /> : (
                       <>
-                        <svg className="w-5 h-5 text-[#9b51e0]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg className="w-5 h-5 text-[var(--accent)]/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
-                        <p className="text-xs text-[#f5f0ff]/25">Upload audio for lip-sync</p>
-                        <p className="text-[10px] text-[#f5f0ff]/12">MP3, WAV, M4A</p>
+                        <p className="text-xs text-[var(--text-1)]/25">Upload audio for lip-sync</p>
+                        <p className="text-[10px] text-[var(--text-1)]/12">MP3, WAV, M4A</p>
                       </>
                     )}
                   </div>
@@ -417,38 +417,38 @@ export default function PromptForm({
       </div>
 
       {/* ═══ Two-Step Workflow ═══ */}
-      <div className="px-6 py-4 border-t border-[#9b51e0]/[0.06] space-y-3">
+      <div className="px-6 py-4 border-t border-[var(--accent)]/[0.06] space-y-3">
 
         {/* ── STEP 1: AUDIO ── */}
         {voiceMode === "tts" && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center ${
-                generatedAudioUrl ? "bg-[#4ade80]/15 text-[#4ade80]" : "bg-[#9b51e0]/10 text-[#b87df5]"
+                generatedAudioUrl ? "bg-[var(--success)]/15 text-[var(--success)]" : "bg-[var(--accent)]/10 text-[var(--accent-light)]"
               }`}>1</span>
-              <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Audio</span>
+              <span className="text-[10px] text-[var(--text-1)]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Audio</span>
               {generatedAudioUrl && audioDuration && (
-                <span className="text-[9px] text-[#4ade80]/40 ml-auto">{audioDuration}s ready</span>
+                <span className="text-[9px] text-[var(--success)]/40 ml-auto">{audioDuration}s ready</span>
               )}
             </div>
 
             {!generatedAudioUrl && !generatingAudio && (
               <button onClick={handleGenerateAudio} disabled={cleanLength === 0}
                 className={`w-full py-3 rounded-xl text-[12px] font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
-                  cleanLength > 0 ? "bg-[#9b51e0]/10 text-[#b87df5] border border-[#9b51e0]/15 hover:bg-[#9b51e0]/20" : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/10 cursor-not-allowed"
+                  cleanLength > 0 ? "bg-[var(--accent)]/10 text-[var(--accent-light)] border border-[var(--accent)]/15 hover:bg-[var(--accent)]/20" : "bg-[#f5f0ff]/[0.02] text-[var(--text-1)]/10 cursor-not-allowed"
                 }`}>
                 Generate Audio
               </button>
             )}
 
             {generatingAudio && (
-              <div className="w-full py-3 rounded-xl bg-[#9b51e0]/5 border border-[#9b51e0]/10 flex items-center justify-center gap-2 text-[12px] text-[#b87df5]/50">
+              <div className="w-full py-3 rounded-xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 flex items-center justify-center gap-2 text-[12px] text-[var(--accent-light)]/50">
                 <Spinner size="sm" /> Generating audio...
               </div>
             )}
 
             {generatedAudioUrl && (
-              <div className="rounded-xl bg-[#9b51e0]/[0.04] border border-[#9b51e0]/10 p-3 flex items-center gap-3">
+              <div className="rounded-xl bg-[var(--accent)]/[0.04] border border-[var(--accent)]/10 p-3 flex items-center gap-3">
                 {/* Waveform bars */}
                 <div className="flex items-end gap-0.5 h-6">
                   {[0.6, 1, 0.7, 0.9, 0.5].map((h, i) => (
@@ -457,12 +457,12 @@ export default function PromptForm({
                   ))}
                 </div>
                 {/* Duration */}
-                <span className="text-[12px] font-[family-name:var(--font-mono)] text-[#f5f0ff]/30 min-w-[40px]">
+                <span className="text-[12px] font-[family-name:var(--font-mono)] text-[var(--text-1)]/30 min-w-[40px]">
                   {audioDuration ? `${audioDuration}s` : "..."}
                 </span>
                 {/* Play/Pause */}
                 <button onClick={handlePlayPause}
-                  className="w-8 h-8 rounded-lg bg-[#9b51e0]/10 flex items-center justify-center text-[#b87df5] hover:bg-[#9b51e0]/20 transition-colors cursor-pointer">
+                  className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-light)] hover:bg-[var(--accent)]/20 transition-colors cursor-pointer">
                   {audioPlaying ? (
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
                   ) : (
@@ -471,7 +471,7 @@ export default function PromptForm({
                 </button>
                 {/* Regenerate */}
                 <button onClick={handleGenerateAudio}
-                  className="ml-auto text-[9px] text-[#f5f0ff]/15 hover:text-[#b87df5] transition-colors cursor-pointer uppercase tracking-wider">
+                  className="ml-auto text-[9px] text-[var(--text-1)]/15 hover:text-[var(--accent-light)] transition-colors cursor-pointer uppercase tracking-wider">
                   Regenerate
                 </button>
               </div>
@@ -479,8 +479,8 @@ export default function PromptForm({
 
             {audioError && (
               <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-[9px] text-[#ff6900]/50">{audioError}</span>
-                <button onClick={handleGenerateAudio} className="text-[9px] text-[#b87df5]/40 hover:text-[#b87df5] cursor-pointer">Retry</button>
+                <span className="text-[9px] text-[var(--warning)]/50">{audioError}</span>
+                <button onClick={handleGenerateAudio} className="text-[9px] text-[var(--accent-light)]/40 hover:text-[var(--accent-light)] cursor-pointer">Retry</button>
               </div>
             )}
           </div>
@@ -489,7 +489,7 @@ export default function PromptForm({
         {/* Connector */}
         {voiceMode === "tts" && (
           <div className="flex justify-center">
-            <div className={`w-px h-4 ${generatedAudioUrl ? "bg-[#9b51e0]/20" : "bg-[#f5f0ff]/5"}`} />
+            <div className={`w-px h-4 ${generatedAudioUrl ? "bg-[var(--accent)]/20" : "bg-[#f5f0ff]/5"}`} />
           </div>
         )}
 
@@ -497,25 +497,25 @@ export default function PromptForm({
         <div className={`transition-opacity ${voiceMode === "tts" && !generatedAudioUrl ? "opacity-30 pointer-events-none" : "opacity-100"}`}>
           <div className="flex items-center gap-2 mb-2">
             <span className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center ${
-              voiceMode === "upload" || generatedAudioUrl ? "bg-[#9b51e0]/10 text-[#b87df5]" : "bg-[#f5f0ff]/5 text-[#f5f0ff]/10"
+              voiceMode === "upload" || generatedAudioUrl ? "bg-[var(--accent)]/10 text-[var(--accent-light)]" : "bg-[#f5f0ff]/5 text-[var(--text-1)]/10"
             }`}>{voiceMode === "upload" ? "1" : "2"}</span>
-            <span className="text-[10px] text-[#f5f0ff]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Video</span>
+            <span className="text-[10px] text-[var(--text-1)]/25 uppercase tracking-wider font-[family-name:var(--font-heading)]">Video</span>
           </div>
 
           {/* Video prompt */}
           <div className="mb-2.5">
             <textarea value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value.slice(0, 500))}
               placeholder="Describe the video style... e.g. 'Energetic talking with hand gestures, expressive body movement, looking at camera'"
-              className="w-full h-16 bg-[#9b51e0]/[0.03] border border-[#9b51e0]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[#9b51e0]/25 transition-colors leading-relaxed" />
+              className="w-full h-16 bg-[var(--accent)]/[0.03] border border-[var(--accent)]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[var(--accent)]/25 transition-colors leading-relaxed" />
             <div className="flex justify-between mt-1 px-1">
-              <span className="text-[9px] text-[#f5f0ff]/12">Describes how the character moves and acts</span>
-              <span className="text-[9px] text-[#f5f0ff]/10 font-[family-name:var(--font-mono)]">{videoPrompt.length}/500</span>
+              <span className="text-[9px] text-[var(--text-1)]/12">Describes how the character moves and acts</span>
+              <span className="text-[9px] text-[var(--text-1)]/10 font-[family-name:var(--font-mono)]">{videoPrompt.length}/500</span>
             </div>
           </div>
 
           {/* Negative prompt (collapsible) */}
           <details className="mb-2.5">
-            <summary className="text-[9px] text-[#f5f0ff]/15 uppercase tracking-wider cursor-pointer hover:text-[#f5f0ff]/25 transition-colors list-none flex items-center gap-1.5 mb-1">
+            <summary className="text-[9px] text-[var(--text-1)]/15 uppercase tracking-wider cursor-pointer hover:text-[var(--text-1)]/25 transition-colors list-none flex items-center gap-1.5 mb-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
@@ -523,7 +523,7 @@ export default function PromptForm({
             </summary>
             <textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value.slice(0, 300))}
               placeholder="What to avoid... e.g. 'blurry, deformed face, static, no movement, bad quality'"
-              className="w-full h-14 bg-[#ff6900]/[0.02] border border-[#ff6900]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[#ff6900]/15 transition-colors leading-relaxed" />
+              className="w-full h-14 bg-[var(--warning)]/[0.02] border border-[var(--warning)]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[var(--warning)]/15 transition-colors leading-relaxed" />
           </details>
 
           {/* Model selector */}
@@ -535,18 +535,18 @@ export default function PromptForm({
                   title={features}
                   className={`py-2.5 px-1.5 rounded-lg text-center transition-all cursor-pointer ${
                     avatarModel === id
-                      ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
+                      ? "bg-[var(--accent)]/15 text-[var(--accent-light)] border border-[var(--accent)]/25"
                       : tooLong
-                        ? "bg-[#f5f0ff]/[0.01] text-[#f5f0ff]/10 border border-transparent opacity-50"
-                        : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+                        ? "bg-[#f5f0ff]/[0.01] text-[var(--text-1)]/10 border border-transparent opacity-50"
+                        : "bg-[#f5f0ff]/[0.02] text-[var(--text-1)]/20 border border-transparent hover:border-[var(--accent)]/10"
                   }`}>
                   <div className={`text-[9px] font-[family-name:var(--font-body)] font-medium leading-tight ${
-                    tooLong ? "text-[#ff6900]/40" : avatarModel === id ? "text-[#b87df5]" : "text-[#f5f0ff]/25"
+                    tooLong ? "text-[var(--warning)]/40" : avatarModel === id ? "text-[var(--accent-light)]" : "text-[var(--text-1)]/25"
                   }`}>
                     {tooLong ? `Audio too long` : features}
                   </div>
                   <div className={`text-[7px] mt-0.5 ${
-                    tooLong ? "text-[#ff6900]/30" : avatarModel === id ? "text-[#b87df5]/25" : "text-[#f5f0ff]/8"
+                    tooLong ? "text-[var(--warning)]/30" : avatarModel === id ? "text-[var(--accent-light)]/25" : "text-[var(--text-1)]/8"
                   }`}>
                     {desc}
                   </div>
@@ -558,7 +558,7 @@ export default function PromptForm({
             const sel = MODEL_OPTIONS.find(m => m.id === avatarModel);
             if (sel && audioDuration != null && audioDuration > sel.maxSec) {
               return (
-                <div className="text-[9px] text-[#ff6900]/50 mb-2">
+                <div className="text-[9px] text-[var(--warning)]/50 mb-2">
                   Audio is {audioDuration}s but {sel.name} supports max ~{sel.maxSec}s. Use a shorter script or pick Aurora/OmniHuman.
                 </div>
               );
@@ -572,11 +572,11 @@ export default function PromptForm({
               <button key={id} onClick={() => setRenderMode(id)}
                 className={`flex-1 py-2 rounded-lg text-center transition-all cursor-pointer ${
                   renderMode === id
-                    ? "bg-[#9b51e0]/15 text-[#b87df5] border border-[#9b51e0]/25"
-                    : "bg-[#f5f0ff]/[0.02] text-[#f5f0ff]/20 border border-transparent hover:border-[#9b51e0]/10"
+                    ? "bg-[var(--accent)]/15 text-[var(--accent-light)] border border-[var(--accent)]/25"
+                    : "bg-[#f5f0ff]/[0.02] text-[var(--text-1)]/20 border border-transparent hover:border-[var(--accent)]/10"
                 }`}>
                 <div className={`text-[10px] font-[family-name:var(--font-body)] font-medium`}>{label}</div>
-                <div className={`text-[7px] mt-0.5 ${renderMode === id ? "text-[#b87df5]/30" : "text-[#f5f0ff]/8"}`}>{desc}</div>
+                <div className={`text-[7px] mt-0.5 ${renderMode === id ? "text-[var(--accent-light)]/30" : "text-[var(--text-1)]/8"}`}>{desc}</div>
               </button>
             ))}
           </div>
@@ -584,7 +584,7 @@ export default function PromptForm({
           {/* Generate Video button */}
           <button onClick={handleSubmit} disabled={!canGenerate}
             className={`w-full py-3.5 rounded-xl text-sm font-[family-name:var(--font-heading)] font-bold tracking-wide transition-all cursor-pointer ${
-              canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[#f5f0ff]/15 cursor-not-allowed"
+              canGenerate ? "btn-brand text-white glow-brand animate-pulse-glow" : "bg-[#f5f0ff]/[0.03] text-[var(--text-1)]/15 cursor-not-allowed"
             }`}>
             {isGenerating ? (
               <span className="flex items-center justify-center gap-2.5"><Spinner size="sm" />Generating video...</span>
@@ -606,7 +606,7 @@ export default function PromptForm({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-[family-name:var(--font-heading)] font-medium text-[#f5f0ff]/22 uppercase tracking-[0.18em] mb-2.5">
+      <label className="block text-[10px] font-[family-name:var(--font-heading)] font-medium text-[var(--text-1)]/22 uppercase tracking-[0.18em] mb-2.5">
         {label}
       </label>
       {children}
@@ -621,8 +621,8 @@ function Slider({ label, value, min, max, step, formatValue, onChange }: {
   return (
     <div>
       <div className="flex justify-between items-center mb-1.5">
-        <span className="text-[11px] font-[family-name:var(--font-body)] text-[#f5f0ff]/28">{label}</span>
-        <span className="text-[11px] text-[#b87df5]/60 font-[family-name:var(--font-mono)] tabular-nums">
+        <span className="text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/28">{label}</span>
+        <span className="text-[11px] text-[var(--accent-light)]/60 font-[family-name:var(--font-mono)] tabular-nums">
           {formatValue ? formatValue(value) : `${value}`}
         </span>
       </div>
@@ -636,13 +636,13 @@ function Slider({ label, value, min, max, step, formatValue, onChange }: {
 
 function AnnotationBtn({ label, tier, onClick }: { label: string; tier?: "audio" | "strong" | "hint"; onClick: () => void }) {
   const tierColor = tier === "audio"
-    ? "border-[#4ade80]/15 hover:border-[#4ade80]/30 hover:text-[#4ade80]"
+    ? "border-[#4ade80]/15 hover:border-[#4ade80]/30 hover:text-[var(--success)]"
     : tier === "strong"
-      ? "border-[#b87df5]/15 hover:border-[#b87df5]/30 hover:text-[#b87df5]"
-      : "border-[#f5f0ff]/5 hover:border-[#f5f0ff]/15 hover:text-[#f5f0ff]/50";
+      ? "border-[#b87df5]/15 hover:border-[#b87df5]/30 hover:text-[var(--accent-light)]"
+      : "border-[#f5f0ff]/5 hover:border-[#f5f0ff]/15 hover:text-[var(--text-1)]/50";
   return (
     <button type="button" onClick={onClick}
-      className={`px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium border bg-transparent text-[#f5f0ff]/25 transition-all cursor-pointer ${tierColor}`}
+      className={`px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium border bg-transparent text-[var(--text-1)]/25 transition-all cursor-pointer ${tierColor}`}
       title={tier === "audio" ? "Directly affects audio" : tier === "strong" ? "Influences video" : "Prompt hint"}>
       {label}
     </button>
@@ -651,7 +651,7 @@ function AnnotationBtn({ label, tier, onClick }: { label: string; tier?: "audio"
 
 function Spinner({ size = "md" }: { size?: "sm" | "md" }) {
   return (
-    <svg className={`animate-spin ${size === "sm" ? "h-4 w-4" : "h-6 w-6"} text-[#9b51e0]`} viewBox="0 0 24 24" fill="none">
+    <svg className={`animate-spin ${size === "sm" ? "h-4 w-4" : "h-6 w-6"} text-[var(--accent)]`} viewBox="0 0 24 24" fill="none">
       <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
       <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
