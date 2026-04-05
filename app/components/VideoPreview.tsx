@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { GestureMode, CostumeVariant, VoicePreset, JobStatus, HistoryEntry } from "@/types";
 
 interface VideoPreviewProps {
@@ -12,8 +12,10 @@ interface VideoPreviewProps {
   voicePreset: VoicePreset;
   compiledPrompt: string;
   baseImagePreview: string;
+  baseImageUrl: string;
   history: HistoryEntry[];
   onHistorySelect: (entry: HistoryEntry) => void;
+  onImageEdited: (falUrl: string, previewUrl: string) => void;
 }
 
 const COSTUME_LABELS: Record<CostumeVariant, string> = {
@@ -29,10 +31,36 @@ const STATUS_CONFIG = {
 
 export default function VideoPreview({
   status, videoUrl, script, gestureMode, costume, voicePreset, compiledPrompt, baseImagePreview,
-  history, onHistorySelect,
+  baseImageUrl, history, onHistorySelect, onImageEdited,
 }: VideoPreviewProps) {
   const cfg = STATUS_CONFIG[status];
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [customizePrompt, setCustomizePrompt] = useState("");
+  const [customizing, setCustomizing] = useState(false);
+  const [customizeError, setCustomizeError] = useState<string | null>(null);
+
+  const handleCustomize = useCallback(async () => {
+    if (customizing || !customizePrompt.trim() || !baseImageUrl) return;
+    setCustomizing(true);
+    setCustomizeError(null);
+    try {
+      const res = await fetch("/api/customize-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: customizePrompt.trim(), imageUrl: baseImageUrl }),
+      });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        onImageEdited(data.imageUrl, data.imageUrl);
+        setCustomizePrompt("");
+      } else {
+        setCustomizeError(data.error || "Failed to customize");
+      }
+    } catch (err) {
+      setCustomizeError(err instanceof Error ? err.message : "Network error");
+    }
+    setCustomizing(false);
+  }, [customizing, customizePrompt, baseImageUrl, onImageEdited]);
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--bg-base)] relative overflow-hidden">
@@ -107,12 +135,36 @@ export default function VideoPreview({
               </div>
             )}
 
-            {script && (
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <div className="glass rounded-xl p-3.5">
-                  <p className="text-[12px] font-[family-name:var(--font-body)] text-[var(--text-1)]/55 leading-relaxed line-clamp-3">
-                    &ldquo;{script}&rdquo;
+            {/* Customize Zag panel */}
+            {baseImagePreview && (
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-lg border border-[var(--border-1)]">
+                  <p className="text-[10px] font-[family-name:var(--font-heading)] font-semibold text-[var(--text-2)] uppercase tracking-wider mb-2">
+                    Customize Zag
                   </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customizePrompt}
+                      onChange={(e) => setCustomizePrompt(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleCustomize(); }}
+                      placeholder="e.g. wearing a santa hat..."
+                      className="flex-1 px-3 py-2 rounded-lg text-xs bg-white border border-[var(--border-1)] text-[var(--text-1)] placeholder-[var(--text-4)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10 transition-all"
+                      disabled={customizing}
+                    />
+                    <button
+                      onClick={handleCustomize}
+                      disabled={customizing || !customizePrompt.trim()}
+                      className={`px-4 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                        customizing ? "bg-[var(--bg-2)] text-[var(--text-4)]"
+                          : "bg-[var(--accent)] text-white hover:bg-[var(--accent-light)] shadow-sm"
+                      }`}>
+                      {customizing ? "..." : "Apply"}
+                    </button>
+                  </div>
+                  {customizeError && (
+                    <p className="text-[10px] text-[var(--error)] mt-1.5">{customizeError}</p>
+                  )}
                 </div>
               </div>
             )}

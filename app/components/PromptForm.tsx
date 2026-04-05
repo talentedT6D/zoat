@@ -50,12 +50,16 @@ interface PromptFormProps {
   onGenerate: (request: GenerateRequest) => void;
   isGenerating: boolean;
   onBaseImageChange?: (previewUrl: string) => void;
+  onBaseImageUrlChange?: (falUrl: string) => void;
+  externalBaseImageUrl?: string;
 }
 
 export default function PromptForm({
   onGenerate,
   isGenerating,
   onBaseImageChange,
+  onBaseImageUrlChange,
+  externalBaseImageUrl,
 }: PromptFormProps) {
   const [script, setScript] = useState("");
   const [gestureMode, setGestureMode] = useState<GestureMode>("A");
@@ -137,7 +141,14 @@ export default function PromptForm({
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { onBaseImageChange?.(DEFAULT_IMAGE_PREVIEW); onBaseImageUrlChange?.(DEFAULT_IMAGE_URL); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync external base image URL from AI customizer
+  useEffect(() => {
+    if (externalBaseImageUrl && externalBaseImageUrl !== baseImageUrl) {
+      setBaseImageUrl(externalBaseImageUrl);
+    }
+  }, [externalBaseImageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear generated audio when voice-affecting settings change
   useEffect(() => {
@@ -158,6 +169,7 @@ export default function PromptForm({
       if (data.error) throw new Error(data.error);
       if (type === "image") {
         setBaseImageUrl(data.url);
+        onBaseImageUrlChange?.(data.url);
         const preview = URL.createObjectURL(file);
         setBaseImagePreview(preview);
         onBaseImageChange?.(preview);

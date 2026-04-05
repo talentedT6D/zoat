@@ -29,6 +29,7 @@ export default function Home() {
   const [liveVoice, setLiveVoice] = useState<VoicePreset>("sarcastic");
   const [compiledPrompt, setCompiledPrompt] = useState("");
   const [baseImagePreview, setBaseImagePreview] = useState("");
+  const [baseImageUrl, setBaseImageUrl] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -162,6 +163,11 @@ export default function Home() {
     setLiveVoice(entry.voicePreset);
   }, []);
 
+  const handleImageEdited = useCallback((falUrl: string, previewUrl: string) => {
+    setBaseImageUrl(falUrl);
+    setBaseImagePreview(previewUrl);
+  }, []);
+
   return (
     <>
       {!loaded && <Preloader onComplete={() => setLoaded(true)} />}
@@ -169,7 +175,9 @@ export default function Home() {
       <PromptForm
         onGenerate={handleGenerate}
         isGenerating={isGenerating}
-        onBaseImageChange={setBaseImagePreview}
+        onBaseImageChange={(preview) => setBaseImagePreview(preview)}
+        onBaseImageUrlChange={(url) => setBaseImageUrl(url)}
+        externalBaseImageUrl={baseImageUrl}
       />
       <VideoPreview
         status={status}
@@ -180,8 +188,10 @@ export default function Home() {
         voicePreset={liveVoice}
         compiledPrompt={compiledPrompt}
         baseImagePreview={baseImagePreview}
+        baseImageUrl={baseImageUrl}
         history={history}
         onHistorySelect={handleHistorySelect}
+        onImageEdited={handleImageEdited}
       />
 
       {/* Error toast */}
