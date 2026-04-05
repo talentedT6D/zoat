@@ -284,7 +284,7 @@ export default function PromptForm({
             {baseImagePreview ? (
               <div className="relative group">
                 <Image src={baseImagePreview} alt="Base character" width={388} height={218} className="w-full h-[180px] object-cover" />
-                <div className="absolute inset-0 bg-[var(--bg-base)]/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-white/85 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="text-xs text-[var(--text-1)]/60 font-[family-name:var(--font-body)]">Click to replace</span>
                 </div>
               </div>

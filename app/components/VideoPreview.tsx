@@ -21,10 +21,10 @@ const COSTUME_LABELS: Record<CostumeVariant, string> = {
 };
 
 const STATUS_CONFIG = {
-  idle: { label: "Ready", dot: "bg-[#f5f0ff]/15", badge: "bg-[#f5f0ff]/[0.03] text-[var(--text-1)]/25" },
-  processing: { label: "Processing", dot: "bg-[var(--warning)] animate-pulse", badge: "bg-[var(--warning)]/10 text-[var(--warning)]/70" },
-  done: { label: "Complete", dot: "bg-[var(--success)]", badge: "bg-[var(--success)]/10 text-[var(--success)]/70" },
-  failed: { label: "Failed", dot: "bg-red-400", badge: "bg-red-500/10 text-red-400/70" },
+  idle: { label: "Ready", dot: "bg-[var(--text-5)]", badge: "bg-[var(--bg-2)] text-[var(--text-3)]" },
+  processing: { label: "Processing", dot: "bg-[var(--warning)] animate-pulse", badge: "bg-orange-50 text-[var(--warning)]" },
+  done: { label: "Complete", dot: "bg-[var(--success)]", badge: "bg-green-50 text-[var(--success)]" },
+  failed: { label: "Failed", dot: "bg-[var(--error)]", badge: "bg-red-50 text-[var(--error)]" },
 };
 
 export default function VideoPreview({
@@ -59,7 +59,7 @@ export default function VideoPreview({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
                 historyOpen
                   ? "bg-[var(--accent)]/15 text-[var(--accent-light)]"
-                  : "bg-[#f5f0ff]/[0.03] text-[var(--text-1)]/25 hover:text-[var(--text-1)]/40"
+                  : "bg-[var(--bg-2)] text-[var(--text-3)] hover:text-[var(--text-2)]"
               }`}
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -81,7 +81,7 @@ export default function VideoPreview({
             <video src={videoUrl} controls autoPlay loop className="w-full h-full object-cover" />
             {/* Download button */}
             <a href={videoUrl} download={`zag-${Date.now()}.mp4`} target="_blank" rel="noopener noreferrer"
-              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-[var(--bg-base)]/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--accent)]/30 cursor-pointer"
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--accent)]/30 cursor-pointer"
               title="Download MP4">
               <svg className="w-4 h-4 text-[var(--text-1)]/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -92,7 +92,7 @@ export default function VideoPreview({
           <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glass">
             {baseImagePreview ? (
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${baseImagePreview})` }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#08060e]/85 via-[#08060e]/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/85 via-white/20 to-transparent" />
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -118,7 +118,7 @@ export default function VideoPreview({
             )}
 
             {status === "processing" && (
-              <div className="absolute inset-0 bg-[var(--bg-base)]/75 flex flex-col items-center justify-center backdrop-blur-sm animate-fade-in">
+              <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center backdrop-blur-sm animate-fade-in">
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full border-2 border-[var(--accent)]/20 flex items-center justify-center">
                     <svg className="animate-spin h-8 w-8 text-[var(--accent)]" viewBox="0 0 24 24" fill="none">
@@ -170,7 +170,7 @@ export default function VideoPreview({
 
       {/* ── History Panel ── */}
       {historyOpen && history.length > 0 && (
-        <div className="absolute inset-0 z-20 bg-[var(--bg-base)]/95 backdrop-blur-sm flex flex-col animate-fade-in">
+        <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex flex-col animate-fade-in">
           <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--accent)]/[0.08]">
             <span className="text-[11px] font-[family-name:var(--font-heading)] font-medium text-[var(--text-1)]/40 uppercase tracking-[0.18em]">
               Generation History
@@ -200,7 +200,7 @@ export default function VideoPreview({
                       onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
                       onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#08060e]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
                         <svg className="w-5 h-5 text-[var(--accent-light)]" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />

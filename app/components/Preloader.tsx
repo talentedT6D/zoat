@@ -71,19 +71,19 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-[#08060e] flex flex-col items-center justify-center transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500 ${
         phase === "exit" ? "opacity-0" : "opacity-100"
       }`}
     >
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-[#9b51e0]/[0.06] rounded-full blur-[120px] animate-float" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-[var(--accent)]/[0.06] rounded-full blur-[120px] animate-float" />
         <div
-          className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-[#0693e3]/[0.04] rounded-full blur-[120px] animate-float"
+          className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-sky-500/[0.04] rounded-full blur-[120px] animate-float"
           style={{ animationDelay: "1s" }}
         />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#00d084]/[0.03] rounded-full blur-[150px] animate-float"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/[0.03] rounded-full blur-[150px] animate-float"
           style={{ animationDelay: "2s" }}
         />
       </div>
@@ -105,7 +105,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
             {/* "ZAG is a ___" */}
             <div className="flex items-baseline gap-3">
-              <span className="text-[#f5f0ff]/25 text-xl font-[family-name:var(--font-heading)] font-light tracking-wide">
+              <span className="text-[var(--text-1)]/25 text-xl font-[family-name:var(--font-heading)] font-light tracking-wide">
                 ZAG is a
               </span>
               <span
@@ -131,12 +131,12 @@ export default function Preloader({ onComplete }: PreloaderProps) {
               </span>
             </div>
 
-            <h1 className="text-5xl font-[family-name:var(--font-heading)] font-bold text-[#f5f0ff] tracking-tight mb-4">
+            <h1 className="text-5xl font-[family-name:var(--font-heading)] font-bold text-[var(--text-1)] tracking-tight mb-4">
               Meet{" "}
               <span>Zag</span>
               {" "}of All Trades
             </h1>
-            <p className="text-base text-[#f5f0ff]/30 font-[family-name:var(--font-body)] tracking-wide">
+            <p className="text-base text-[var(--text-1)]/30 font-[family-name:var(--font-body)] tracking-wide">
               AI Avatar Studio &middot; Must Be Nuts
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
       {/* Bottom progress bar */}
       <div className="absolute bottom-0 left-0 right-0">
-        <div className="h-[2px] bg-[#9b51e0]/[0.06]">
+        <div className="h-[2px] bg-[var(--accent)]/[0.06]">
           <div
             className="h-full transition-all duration-300 ease-out"
             style={{
@@ -160,19 +160,19 @@ export default function Preloader({ onComplete }: PreloaderProps) {
           <div className="flex items-center gap-2">
             {phase === "roles" && (
               <>
-                <div className="w-1.5 h-1.5 rounded-full bg-[#9b51e0] animate-pulse" />
-                <span className="text-[10px] text-[#f5f0ff]/20 font-[family-name:var(--font-mono)] tracking-[0.2em]">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                <span className="text-[10px] text-[var(--text-1)]/20 font-[family-name:var(--font-mono)] tracking-[0.2em]">
                   LOADING
                 </span>
               </>
             )}
             {phase === "reveal" && (
-              <span className="text-[10px] text-[#9b51e0]/60 font-[family-name:var(--font-mono)] tracking-[0.2em]">
+              <span className="text-[10px] text-[var(--accent)]/60 font-[family-name:var(--font-mono)] tracking-[0.2em]">
                 READY
               </span>
             )}
           </div>
-          <span className="text-[10px] text-[#f5f0ff]/15 font-[family-name:var(--font-mono)] tabular-nums">
+          <span className="text-[10px] text-[var(--text-1)]/15 font-[family-name:var(--font-mono)] tabular-nums">
             {phase === "roles"
               ? `${Math.min(currentIndex + 1, PROFESSIONS.length)} / ${PROFESSIONS.length}`
               : ""}
