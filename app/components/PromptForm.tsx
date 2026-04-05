@@ -129,7 +129,7 @@ export default function PromptForm({
   const cleanLength = stripAllAnnotations(script).length;
   const hasAnnotations = cleanLength !== script.length;
   const estDuration = script.trim() ? estimateDuration(script) : 0;
-  const [toolbarOpen, setToolbarOpen] = useState(true);
+
   const [generatingAudio, setGeneratingAudio] = useState(false);
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -272,105 +272,86 @@ export default function PromptForm({
         </div>
       </div>
 
-      <div className="flex-1 px-5 py-4 flex flex-col gap-4 overflow-y-auto">
-        {/* ── Base Image Upload ── */}
-        <Section label="Character Image">
+      <div className="flex-1 px-5 py-3 flex flex-col gap-3 overflow-y-auto">
+
+        {/* ── Image + Voice mode in one row ── */}
+        <div className="flex gap-3 items-start">
+          {/* Compact image thumbnail */}
           <div
-            className={`upload-zone rounded-xl overflow-hidden cursor-pointer transition-all ${baseImagePreview ? "border-[var(--accent)]/15" : ""} ${uploading === "image" ? "active" : ""}`}
+            className={`w-16 h-16 rounded-xl overflow-hidden cursor-pointer shrink-0 upload-zone ${baseImagePreview ? "" : ""}`}
             onClick={() => imageInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleImageDrop}
           >
             {baseImagePreview ? (
-              <div className="relative group">
-                <Image src={baseImagePreview} alt="Base character" width={388} height={218} className="w-full h-[180px] object-cover" />
-                <div className="absolute inset-0 bg-white/85 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-xs text-[var(--text-1)]/60 font-[family-name:var(--font-body)]">Click to replace</span>
-                </div>
-              </div>
+              <Image src={baseImagePreview} alt="Character" width={64} height={64} className="w-full h-full object-cover" />
             ) : (
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
-                {uploading === "image" ? <Spinner /> : (
-                  <>
-                    <div className="w-12 h-12 rounded-xl border border-[var(--accent)]/10 bg-[var(--accent)]/[0.03] flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[var(--accent)]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-[var(--text-1)]/35 font-[family-name:var(--font-body)]">Drop image or click to upload</p>
-                      <p className="text-[10px] text-[var(--text-1)]/15 mt-1">PNG, JPG up to 10MB</p>
-                    </div>
-                  </>
+              <div className="w-full h-full flex items-center justify-center bg-[var(--bg-2)]">
+                {uploading === "image" ? <Spinner size="sm" /> : (
+                  <svg className="w-5 h-5 text-[var(--text-4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                  </svg>
                 )}
               </div>
             )}
           </div>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "image"); }} />
-        </Section>
 
-        {/* ── Voice Mode Toggle ── */}
-        <Section label="Voice">
-          <div className="glass rounded-xl p-1 flex gap-1">
-            {(["tts", "upload"] as VoiceMode[]).map((mode) => (
-              <button key={mode} onClick={() => setVoiceMode(mode)}
-                className={`flex-1 py-2 rounded-lg text-xs font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
-                  voiceMode === mode ? "bg-[var(--accent)]/15 text-[var(--accent-light)] glow-brand-sm" : "text-[var(--text-1)]/30 hover:text-[var(--text-1)]/50"
-                }`}>
-                {mode === "tts" ? "Text to Speech" : "Upload Audio"}
-              </button>
-            ))}
-          </div>
-
-          {voiceMode === "tts" && (
-            <div className="mt-3 animate-fade-in">
-              {/* Annotation toolbar — data-driven from registry */}
-              <div className="mb-2">
-                <button type="button" onClick={() => setToolbarOpen((p) => !p)}
-                  className="flex items-center gap-1.5 text-[10px] text-[var(--text-1)]/25 hover:text-[var(--accent-light)] transition-colors cursor-pointer mb-1.5">
-                  <svg className={`w-3 h-3 transition-transform ${toolbarOpen ? "rotate-180" : ""}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                  <span>Annotations</span>
-                  <span className="text-[var(--text-1)]/10">({TOOLBAR_CATEGORIES.length} categories)</span>
+          {/* Voice mode toggle */}
+          <div className="flex-1">
+            <div className="bg-[var(--bg-2)] rounded-xl p-1 flex gap-1">
+              {(["tts", "upload"] as VoiceMode[]).map((mode) => (
+                <button key={mode} onClick={() => setVoiceMode(mode)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-[family-name:var(--font-body)] font-medium transition-all cursor-pointer ${
+                    voiceMode === mode ? "bg-white text-[var(--accent)] shadow-sm" : "text-[var(--text-3)] hover:text-[var(--text-2)]"
+                  }`}>
+                  {mode === "tts" ? "Text to Speech" : "Upload Audio"}
                 </button>
-                {toolbarOpen && (
-                  <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
-                    {TOOLBAR_CATEGORIES.map(({ category, label }) => {
-                      const defs = REGISTRY_BY_CATEGORY.get(category) ?? [];
-                      if (defs.length === 0) return null;
-                      return (
-                        <div key={category} className="flex items-center gap-1 flex-wrap">
-                          <span className="text-[9px] text-[var(--text-1)]/15 uppercase tracking-wider w-14 shrink-0">{label}</span>
-                          {defs.map((def) => (
-                            <AnnotationBtn key={def.tag} label={def.label} tier={def.tier}
-                              onClick={() => insertAnnotation(def.tag, def.type === "wrapper")} />
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 5000))}
-                placeholder="Type your script here..."
-                className="w-full h-32 bg-white border border-[var(--border-1)] rounded-xl p-3.5 text-sm font-[family-name:var(--font-body)] text-[var(--text-1)] placeholder-[var(--text-4)] resize-none focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10 transition-all leading-relaxed" />
-              <div className="flex justify-between mt-1.5 px-1">
-                <span className="text-[10px] text-[var(--text-4)]">
-                  {estDuration > 0
-                    ? `~${estDuration >= 60 ? `${Math.floor(estDuration / 60)}m ${Math.round(estDuration % 60)}s` : `${estDuration}s`} video`
-                    : hasAnnotations
-                      ? `${cleanLength} chars + annotations`
-                      : "Use annotations for pauses and voice effects"}
-                </span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[var(--warning)]" : "text-[var(--text-4)]"}`}>
-                  {cleanLength}/5000
-                </span>
-              </div>
+              ))}
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* ── Script textarea (always visible, prominent) ── */}
+        {voiceMode === "tts" && (
+          <div className="animate-fade-in">
+            <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 5000))}
+              placeholder="Type your script here..."
+              className="w-full h-28 bg-white border border-[var(--border-1)] rounded-xl p-3 text-sm font-[family-name:var(--font-body)] text-[var(--text-1)] placeholder-[var(--text-4)] resize-none focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10 transition-all leading-relaxed" />
+            <div className="flex justify-between mt-1 px-0.5">
+              <span className="text-[10px] text-[var(--text-4)]">
+                {estDuration > 0 ? `~${estDuration}s` : ""}
+              </span>
+              <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[var(--warning)]" : "text-[var(--text-4)]"}`}>
+                {cleanLength}/5000
+              </span>
+            </div>
+
+            {/* Annotations — collapsed by default */}
+            <details className="mt-2">
+              <summary className="text-[10px] text-[var(--text-3)] cursor-pointer hover:text-[var(--accent)] transition-colors list-none flex items-center gap-1.5">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Voice Effects
+              </summary>
+              <div className="mt-2 space-y-1.5">
+                {TOOLBAR_CATEGORIES.map(({ category, label }) => {
+                  const defs = REGISTRY_BY_CATEGORY.get(category) ?? [];
+                  if (defs.length === 0) return null;
+                  return (
+                    <div key={category} className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[9px] text-[var(--text-4)] uppercase tracking-wider w-12 shrink-0">{label}</span>
+                      {defs.map((def) => (
+                        <AnnotationBtn key={def.tag} label={def.label} tier={def.tier}
+                          onClick={() => insertAnnotation(def.tag, def.type === "wrapper")} />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          </div>
+        )}
 
           {voiceMode === "upload" && (
             <div className="mt-3 animate-fade-in">
@@ -412,12 +393,10 @@ export default function PromptForm({
                 onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "audio"); }} />
             </div>
           )}
-          {/* Voice style presets inside the Voice section */}
-        </Section>
       </div>
 
       {/* ═══ Two-Step Workflow ═══ */}
-      <div className="px-6 py-4 border-t border-[var(--accent)]/[0.06] space-y-3">
+      <div className="px-5 py-3 border-t border-[var(--border-1)] space-y-3">
 
         {/* ── STEP 1: AUDIO ── */}
         {voiceMode === "tts" && (
@@ -641,16 +620,10 @@ function Slider({ label, value, min, max, step, formatValue, onChange }: {
 
 
 
-function AnnotationBtn({ label, tier, onClick }: { label: string; tier?: "audio" | "strong" | "hint"; onClick: () => void }) {
-  const tierColor = tier === "audio"
-    ? "border-[#4ade80]/15 hover:border-[#4ade80]/30 hover:text-[var(--success)]"
-    : tier === "strong"
-      ? "border-[#b87df5]/15 hover:border-[#b87df5]/30 hover:text-[var(--accent-light)]"
-      : "border-[#f5f0ff]/5 hover:border-[#f5f0ff]/15 hover:text-[var(--text-1)]/50";
+function AnnotationBtn({ label, onClick }: { label: string; tier?: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className={`px-2 py-1 rounded-md text-[10px] font-[family-name:var(--font-body)] font-medium border bg-transparent text-[var(--text-1)]/25 transition-all cursor-pointer ${tierColor}`}
-      title={tier === "audio" ? "Directly affects audio" : tier === "strong" ? "Influences video" : "Prompt hint"}>
+      className="px-2.5 py-1 rounded-lg text-[10px] font-[family-name:var(--font-body)] font-medium bg-[var(--bg-2)] text-[var(--text-3)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] border border-[var(--border-1)] transition-all cursor-pointer">
       {label}
     </button>
   );
