@@ -355,17 +355,17 @@ export default function PromptForm({
                 )}
               </div>
               <textarea ref={textareaRef} value={script} onChange={(e) => setScript(e.target.value.slice(0, 5000))}
-                placeholder="Type your script... Use toolbar to add pauses, gestures, and voice cues"
-                className="w-full h-32 bg-[var(--accent)]/[0.03] border border-[var(--accent)]/[0.08] rounded-xl p-3.5 text-[13px] font-[family-name:var(--font-body)] text-[var(--text-1)]/85 placeholder-[#f5f0ff]/15 resize-none focus:outline-none focus:border-[var(--accent)]/25 transition-colors leading-relaxed" />
+                placeholder="Type your script here..."
+                className="w-full h-32 bg-white border border-[var(--border-1)] rounded-xl p-3.5 text-sm font-[family-name:var(--font-body)] text-[var(--text-1)] placeholder-[var(--text-4)] resize-none focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10 transition-all leading-relaxed" />
               <div className="flex justify-between mt-1.5 px-1">
-                <span className="text-[10px] text-[var(--text-1)]/15">
+                <span className="text-[10px] text-[var(--text-4)]">
                   {estDuration > 0
                     ? `~${estDuration >= 60 ? `${Math.floor(estDuration / 60)}m ${Math.round(estDuration % 60)}s` : `${estDuration}s`} video`
                     : hasAnnotations
                       ? `${cleanLength} chars + annotations`
-                      : "Annotations supported"}
+                      : "Use annotations for pauses and voice effects"}
                 </span>
-                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[var(--warning)]/60" : "text-[var(--text-1)]/15"}`}>
+                <span className={`text-[10px] font-[family-name:var(--font-mono)] ${cleanLength > 4500 ? "text-[var(--warning)]" : "text-[var(--text-4)]"}`}>
                   {cleanLength}/5000
                 </span>
               </div>
@@ -448,32 +448,39 @@ export default function PromptForm({
             )}
 
             {generatedAudioUrl && (
-              <div className="rounded-xl bg-[var(--accent)]/[0.04] border border-[var(--accent)]/10 p-3 flex items-center gap-3">
-                {/* Waveform bars */}
-                <div className="flex items-end gap-0.5 h-6">
-                  {[0.6, 1, 0.7, 0.9, 0.5].map((h, i) => (
-                    <div key={i} className={`waveform-bar ${audioPlaying ? "waveform-playing" : ""}`}
-                      style={{ height: `${h * 24}px`, animationDelay: `${i * 0.12}s` }} />
-                  ))}
+              <div className="rounded-2xl bg-[var(--bg-2)] border border-[var(--border-1)] p-4 animate-fade-in">
+                {/* Full-width waveform visualization */}
+                <div className="flex items-center gap-1 h-10 mb-3 px-1">
+                  {Array.from({ length: 40 }, (_, i) => {
+                    const h = 0.2 + Math.sin(i * 0.5) * 0.3 + Math.random() * 0.5;
+                    return (
+                      <div key={i} className={`flex-1 rounded-full ${audioPlaying ? "waveform-playing bg-[var(--accent)]" : "bg-[var(--accent)]/20"}`}
+                        style={{ height: `${h * 40}px`, animationDelay: `${i * 0.05}s`, minWidth: "2px" }} />
+                    );
+                  })}
                 </div>
-                {/* Duration */}
-                <span className="text-[12px] font-[family-name:var(--font-mono)] text-[var(--text-1)]/30 min-w-[40px]">
-                  {audioDuration ? `${audioDuration}s` : "..."}
-                </span>
-                {/* Play/Pause */}
-                <button onClick={handlePlayPause}
-                  className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent-light)] hover:bg-[var(--accent)]/20 transition-colors cursor-pointer">
-                  {audioPlaying ? (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                  )}
-                </button>
-                {/* Regenerate */}
-                <button onClick={handleGenerateAudio}
-                  className="ml-auto text-[9px] text-[var(--text-1)]/15 hover:text-[var(--accent-light)] transition-colors cursor-pointer uppercase tracking-wider">
-                  Regenerate
-                </button>
+                {/* Controls row */}
+                <div className="flex items-center gap-3">
+                  {/* Play/Pause button */}
+                  <button onClick={handlePlayPause}
+                    className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-white hover:bg-[var(--accent-light)] transition-colors cursor-pointer shadow-md">
+                    {audioPlaying ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+                    ) : (
+                      <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    )}
+                  </button>
+                  {/* Duration */}
+                  <span className="text-sm font-[family-name:var(--font-mono)] text-[var(--text-2)] font-medium">
+                    {audioDuration ? `${audioDuration}s` : "..."}
+                  </span>
+                  <span className="text-xs text-[var(--text-4)]">ready</span>
+                  {/* Regenerate */}
+                  <button onClick={handleGenerateAudio}
+                    className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--text-3)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all cursor-pointer">
+                    Regenerate
+                  </button>
+                </div>
               </div>
             )}
 
@@ -506,9 +513,9 @@ export default function PromptForm({
           <div className="mb-2.5">
             <textarea value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value.slice(0, 500))}
               placeholder="Describe the video style... e.g. 'Energetic talking with hand gestures, expressive body movement, looking at camera'"
-              className="w-full h-16 bg-[var(--accent)]/[0.03] border border-[var(--accent)]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[var(--accent)]/25 transition-colors leading-relaxed" />
+              className="w-full h-16 bg-white border border-[var(--border-1)] rounded-xl p-3 text-xs font-[family-name:var(--font-body)] text-[var(--text-1)] placeholder-[var(--text-4)] resize-none focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10 transition-all leading-relaxed" />
             <div className="flex justify-between mt-1 px-1">
-              <span className="text-[9px] text-[var(--text-1)]/12">Describes how the character moves and acts</span>
+              <span className="text-[10px] text-[var(--text-4)]">Describes how the character moves and acts</span>
               <span className="text-[9px] text-[var(--text-1)]/10 font-[family-name:var(--font-mono)]">{videoPrompt.length}/500</span>
             </div>
           </div>
@@ -523,7 +530,7 @@ export default function PromptForm({
             </summary>
             <textarea value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value.slice(0, 300))}
               placeholder="What to avoid... e.g. 'blurry, deformed face, static, no movement, bad quality'"
-              className="w-full h-14 bg-[var(--warning)]/[0.02] border border-[var(--warning)]/[0.08] rounded-xl p-3 text-[11px] font-[family-name:var(--font-body)] text-[var(--text-1)]/70 placeholder-[#f5f0ff]/12 resize-none focus:outline-none focus:border-[var(--warning)]/15 transition-colors leading-relaxed" />
+              className="w-full h-14 bg-white border border-[var(--border-1)] rounded-xl p-3 text-xs font-[family-name:var(--font-body)] text-[var(--text-1)] placeholder-[var(--text-4)] resize-none focus:outline-none focus:border-[var(--warning)] focus:ring-2 focus:ring-[var(--warning)]/10 transition-all leading-relaxed" />
           </details>
 
           {/* Model selector */}
