@@ -120,7 +120,6 @@ export default function VideoPreview({
           <div className="relative w-full max-w-[380px] aspect-[9/16] rounded-2xl overflow-hidden glass">
             {baseImagePreview ? (
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${baseImagePreview})` }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-white/85 via-white/20 to-transparent" />
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center">

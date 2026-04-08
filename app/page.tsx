@@ -28,8 +28,8 @@ export default function Home() {
   const [liveCostume, setLiveCostume] = useState<CostumeVariant>("default");
   const [liveVoice, setLiveVoice] = useState<VoicePreset>("sarcastic");
   const [compiledPrompt, setCompiledPrompt] = useState("");
-  const [baseImagePreview, setBaseImagePreview] = useState("");
-  const [baseImageUrl, setBaseImageUrl] = useState("");
+  const [baseImagePreview, setBaseImagePreview] = useState("/assets/zag_base.png");
+  const [baseImageUrl, setBaseImageUrl] = useState("https://v3b.fal.media/files/b/0a943e13/PBo3G2TETzi7_b2BUfuqS_1774873793470.png");
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     if (typeof window === "undefined") return [];
     try {
